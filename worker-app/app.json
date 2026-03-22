@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "RanX24 Service Partner",
+    "slug": "ranx24-service-partner",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.jpg",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logo.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#1E40AF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ranx24.worker"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.jpg",
+        "backgroundColor": "#1E40AF"
+      },
+      "package": "com.RanX24.Worker",
+      "jsEngine": "hermes",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/logo.jpg"
+    },
+    "plugins": [
+      "expo-image-picker",
+      "expo-location",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "useLegacyPackaging": true,
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "scheme": "ranx24-worker",
+    "extra": {
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+}

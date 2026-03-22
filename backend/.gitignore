@@ -1,0 +1,33 @@
+node_modules/
+.env
+.env.local
+.env.production
+.env.test
+uploads/
+*.log
+logs/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+crash.log
+*.txt
+backend_error_log.txt
+
+# Sensitive credentials - NEVER commit these
+config/serviceAccountKey.json
+config/firebase-credentials.json
+firebase-credentials.json
+temp_key.json
+debug-start.js
+*.pem
+*.key
+*.p12
+
+# Build output
+dist/
+build/

@@ -1,0 +1,15 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.RanX24.user",
+            "sha256_cert_fingerprints": [
+                "20:A1:3A:A5:40:2C:E7:D0:F5:FD:93:91:D2:50:38:37:D4:2B:A4:5F:BC:CF:8D:85:89:C0:B2:D4:5E:53:77:D2",
+                "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:25"
+            ]
+        }
+    }
+]

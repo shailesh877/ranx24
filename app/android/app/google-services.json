@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "415451097284",
+    "project_id": "ranx24-f771c",
+    "storage_bucket": "ranx24-f771c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:415451097284:android:0473fece6490f662ad0191",
+        "android_client_info": {
+          "package_name": "com.RanX24.user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5XW_bpfTJaGyGtNTLQZBCcuUK4KD5D-Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

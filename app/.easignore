@@ -1,0 +1,22 @@
+# Ignore build artifacts
+android/build/
+android/.gradle/
+android/app/build/
+android/.cxx/
+
+# Ignore node_modules build artifacts
+node_modules/**/android/build/
+node_modules/**/android/.cxx/
+node_modules/**/.gradle/
+
+# Ignore iOS (not needed for Android build)
+ios/
+
+# Ignore large files
+*.mp4
+*.mov
+*.avi
+
+# Ignore cache
+.expo/
+.gradle/
