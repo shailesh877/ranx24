@@ -172,9 +172,26 @@ export default function MembershipPlanPage() {
                                 </div>
 
                                 <div className="mb-8">
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-4xl font-black text-gray-900">₹{plan.price}</span>
-                                        <span className="text-gray-500 font-bold">/ total</span>
+                                    <div className="flex flex-col gap-2">
+                                        {plan.actual_price && (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-gray-400 decoration-red-400 decoration-2">
+                                                    <del>₹{plan.actual_price}</del>
+                                                </span>
+                                                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Regular Price</span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-baseline gap-2">
+                                            <div className="flex flex-col items-start pr-2 border-r-2 border-emerald-100">
+                                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Offer Price</span>
+                                            </div>
+                                            <span className="text-5xl font-black text-gray-900 tracking-tighter">₹{plan.price}</span>
+                                            <span className="text-gray-500 font-bold ml-1">/ total</span>
+                                        </div>
+                                        <div className="mt-3 inline-flex items-center gap-1.5 bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 text-red-600 px-3 py-1.5 rounded-lg w-max shadow-sm transform transition hover:scale-105">
+                                            <LucideZap size={14} className="fill-red-500 text-red-500 animate-pulse" />
+                                            <span className="text-[11px] font-black tracking-wider uppercase">Offer valid for first 100 customers only!</span>
+                                        </div>
                                     </div>
                                     {plan.description && (
                                         <p className="mt-4 text-sm font-medium text-gray-500 leading-relaxed">
