@@ -37,6 +37,10 @@ const serviceSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    availableCities: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'City'
+    }],
 }, {
     timestamps: true,
 });

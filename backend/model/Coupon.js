@@ -59,6 +59,11 @@ const CouponSchema = new mongoose.Schema({
         enum: ['all', 'first-booking', 'specific-service'],
         default: 'all'
     },
+    specificService: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Service',
+        default: null
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Admin'

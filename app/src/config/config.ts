@@ -12,7 +12,7 @@ const getApiUrl = () => {
     // Development fallback
     if (__DEV__) {
         // Use local network IP for mobile development
-        return 'http://192.168.31.124:5000/api';
+        return 'http://192.168.1.10:5000/api';
     }
 
     // Production fallback (should not reach here if env vars are set)

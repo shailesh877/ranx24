@@ -7,6 +7,7 @@ const CouponManagement = () => {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingCoupon, setEditingCoupon] = useState(null);
+    const [services, setServices] = useState([]);
 
     const [formData, setFormData] = useState({
         code: '',
@@ -19,12 +20,23 @@ const CouponManagement = () => {
         userUsageLimit: '1',
         validFrom: '',
         validUntil: '',
-        applicableOn: 'all'
+        applicableOn: 'all',
+        specificService: ''
     });
 
     useEffect(() => {
         fetchCoupons();
+        fetchServices();
     }, []);
+
+    const fetchServices = async () => {
+        try {
+            const { data } = await api.get('/services');
+            setServices(data);
+        } catch (error) {
+            console.error('Error fetching services:', error);
+        }
+    };
 
     const fetchCoupons = async () => {
         try {
@@ -76,7 +88,8 @@ const CouponManagement = () => {
             userUsageLimit: coupon.userUsageLimit,
             validFrom: coupon.validFrom ? new Date(coupon.validFrom).toISOString().slice(0, 16) : '',
             validUntil: coupon.validUntil ? new Date(coupon.validUntil).toISOString().slice(0, 16) : '',
-            applicableOn: coupon.applicableOn
+            applicableOn: coupon.applicableOn,
+            specificService: coupon.specificService || ''
         });
         setShowModal(true);
     };
@@ -115,7 +128,8 @@ const CouponManagement = () => {
             userUsageLimit: '1',
             validFrom: '',
             validUntil: '',
-            applicableOn: 'all'
+            applicableOn: 'all',
+            specificService: ''
         });
         setEditingCoupon(null);
         setShowModal(false);
@@ -365,6 +379,26 @@ const CouponManagement = () => {
                                         <option value="specific-service">Specific Service</option>
                                     </select>
                                 </div>
+
+                                {formData.applicableOn === 'specific-service' && (
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Select Service*</label>
+                                        <select
+                                            name="specificService"
+                                            value={formData.specificService}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        >
+                                            <option value="">Choose a service...</option>
+                                            {services.map(service => (
+                                                <option key={service._id} value={service._id}>
+                                                    {service.name} (₹{service.basePrice})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
 
                                 <div className="flex gap-3 pt-4">
                                     <button

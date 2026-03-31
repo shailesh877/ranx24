@@ -81,7 +81,7 @@ const workerSchema = new mongoose.Schema({
   ],
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected', 'unavailable'],
+    enum: ['pending', 'approved', 'rejected', 'unavailable', 'inactive'],
     default: 'pending',
   },
   workerType: {

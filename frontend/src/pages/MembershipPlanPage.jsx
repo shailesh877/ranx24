@@ -5,6 +5,7 @@ import { LucideCheck, LucideCrown, LucideShieldCheck, LucideZap, LucideLoader2 }
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import MembershipCard from '../components/MembershipCard';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://backend.ranx24.com/api';
 
@@ -12,23 +13,31 @@ export default function MembershipPlanPage() {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
     const [plans, setPlans] = useState([]);
+    const [activeMembership, setActiveMembership] = useState(null);
     const [loading, setLoading] = useState(true);
     const [buyingId, setBuyingId] = useState(null);
 
     useEffect(() => {
-        const fetchPlans = async () => {
+        const fetchData = async () => {
             try {
-                const { data } = await axiosInstance.get(`/membership-plans`);
-                setPlans(data);
+                const plansRes = await axiosInstance.get(`/membership-plans`);
+                setPlans(plansRes.data);
+
+                if (isAuthenticated) {
+                    const membRes = await axiosInstance.get(`/membership-plans/my-membership`);
+                    if (membRes.data.success) {
+                        setActiveMembership(membRes.data.data);
+                    }
+                }
             } catch (error) {
-                console.error('Error fetching plans:', error);
-                toast.error('Failed to load membership plans');
+                console.error('Error fetching data:', error);
+                toast.error('Failed to load membership data');
             } finally {
                 setLoading(false);
             }
         };
-        fetchPlans();
-    }, []);
+        fetchData();
+    }, [isAuthenticated]);
 
     const handleBuy = async (planId) => {
         if (!isAuthenticated) {
@@ -103,6 +112,44 @@ export default function MembershipPlanPage() {
         }
     };
 
+    const renderDescription = (desc) => {
+        if (!desc) return null;
+        
+        // Remove "Facilities" if it's at the start and treat as optional header
+        let cleanDesc = desc;
+        let showFacilities = false;
+        if (desc.startsWith("Facilities")) {
+            showFacilities = true;
+            cleanDesc = desc.replace("Facilities", "").trim();
+        }
+        
+        // Simple and robust split: looks for a space followed by a number and period.
+        // This ensures all points are captured and multi-digit numbers stay intact.
+        const points = cleanDesc.split(/(?=\s\d+\.)/).map(p => p.trim()).filter(p => p !== "");
+        
+        return (
+            <div className="mt-4 space-y-2.5">
+                {showFacilities && (
+                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">
+                        Core Facilities
+                    </p>
+                )}
+                {points.length > 0 ? (
+                    points.map((point, index) => (
+                        <div key={index} className="flex gap-3 text-[13px] font-semibold text-gray-600 leading-snug items-start group">
+                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500/40 group-hover:bg-blue-500 transition-colors flex-shrink-0" />
+                            <span>{point}</span>
+                        </div>
+                    ))
+                ) : (
+                    <p className="text-sm font-medium text-gray-500 leading-relaxed">
+                        {desc}
+                    </p>
+                )}
+            </div>
+        );
+    };
+
     if (loading) {
         return (
             <div className="pt-32 pb-20 flex justify-center items-center min-h-[60vh]">
@@ -122,6 +169,44 @@ export default function MembershipPlanPage() {
                         Unlock exclusive benefits, priority support, and extra savings on every service.
                     </p>
                 </div>
+
+                {activeMembership && (
+                    <div className="mb-20 flex flex-col items-center">
+                        <div className="w-full max-w-md flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-black text-gray-900">Your Active Membership</h2>
+                            <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase tracking-widest shadow-sm border border-green-200">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                Active
+                            </div>
+                        </div>
+                        <MembershipCard 
+                            userName={user?.name}
+                            cardNumber={activeMembership.card_number}
+                            expiryDate={activeMembership.expiry_date}
+                            planName={activeMembership.plan_id?.name}
+                        />
+                        <div className="mt-8 p-6 bg-white rounded-3xl border border-gray-100 shadow-xl shadow-blue-500/5 max-w-2xl w-full">
+                            <p className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Membership Privileges</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {activeMembership.plan_id?.discount_tiers?.map((tier, idx) => (
+                                    <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
+                                        <div className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-500/20">
+                                            <LucideCheck size={14} strokeWidth={4} />
+                                        </div>
+                                        <span className="text-sm font-bold text-gray-700">
+                                            {tier.discount || tier.discount_percentage}% discount {tier.min_amount && `on ₹${tier.min_amount}+`}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="w-full max-w-2xl mt-12 flex items-center gap-4">
+                            <div className="h-px bg-gray-200 flex-grow"></div>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Want to Upgrade?</span>
+                            <div className="h-px bg-gray-200 flex-grow"></div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
                     {plans.map((plan) => {
@@ -193,11 +278,7 @@ export default function MembershipPlanPage() {
                                             <span className="text-[11px] font-black tracking-wider uppercase">Offer valid for first 100 customers only!</span>
                                         </div>
                                     </div>
-                                    {plan.description && (
-                                        <p className="mt-4 text-sm font-medium text-gray-500 leading-relaxed">
-                                            {plan.description}
-                                        </p>
-                                    )}
+                                    {renderDescription(plan.description)}
                                 </div>
 
                                 <div className="space-y-4 mb-10 flex-grow">

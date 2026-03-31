@@ -8,14 +8,16 @@ import toast from 'react-hot-toast';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Skeleton from '../components/ui/Skeleton';
+import axiosInstance from '../utils/axiosConfig';
 import { useAuth } from '../context/AuthContext';
+import MembershipCard from '../components/MembershipCard';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://backend.ranx24.com/api';
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'https://backend.ranx24.com';
 
 export default function UserProfilePage() {
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { user, logout, updateUser } = useAuth();
     const [profile, setProfile] = useState(null);
     const [stats, setStats] = useState({
         totalBookings: 0,
@@ -23,25 +25,21 @@ export default function UserProfilePage() {
         totalSpent: 0,
         reviewsGiven: 0,
     });
-    const [membership, setMembership] = useState(null);
-    const [amc, setAmc] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchProfile();
         fetchStats();
-        fetchMembership();
-        fetchAMCPackage();
     }, []);
 
     const fetchProfile = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const config = {
-                headers: { Authorization: `Bearer ${token}` },
-            };
-            const { data } = await axios.get(`${API_URL}/users/profile`, config);
+            const { data } = await axiosInstance.get(`/users/profile`);
             setProfile(data);
+            // Update AuthContext user data to stay in sync with the latest membership/AMC info
+            if (typeof updateUser === 'function') {
+                updateUser(data);
+            }
         } catch (error) {
             console.error('Error fetching profile:', error);
             toast.error('Failed to load profile');
@@ -80,35 +78,6 @@ export default function UserProfilePage() {
         }
     };
 
-    const fetchMembership = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const config = {
-                headers: { Authorization: `Bearer ${token}` },
-            };
-            const { data } = await axios.get(`${API_URL}/membership-plans/my-membership`, config);
-            if (data.success) {
-                setMembership(data.data);
-            }
-        } catch (error) {
-            console.error('Error fetching membership:', error);
-        }
-    };
-
-    const fetchAMCPackage = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const config = {
-                headers: { Authorization: `Bearer ${token}` },
-            };
-            const { data } = await axios.get(`${API_URL}/amc-plans/my-amc`, config);
-            if (data.success) {
-                setAmc(data.data);
-            }
-        } catch (error) {
-            console.error('Error fetching AMC package:', error);
-        }
-    };
 
     const handleLogout = () => {
         logout();
@@ -167,79 +136,77 @@ export default function UserProfilePage() {
                         </Button>
                     </div>
                 </Card>
-                {/* Active Membership Section */}
-                {membership && (
-                    <Card className="mb-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-none shadow-blue-500/20">
-                        <div className="flex justify-between items-center mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white/20 rounded-lg">
-                                    <FaCrown className="text-yellow-400 text-2xl" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-black">{membership.plan_id?.name || 'Active Plan'}</h2>
-                                    <p className="text-blue-100 text-sm font-medium">Enjoying premium benefits</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-xs font-bold text-blue-200 uppercase tracking-wider">Expires On</p>
-                                <p className="text-lg font-black">{membership.expiry_date}</p>
-                            </div>
+                {/* Active Membership Section - Supports multiple plans (Gold, Silver, etc.) */}
+                {profile?.memberships?.map((membership, index) => (
+                    <div key={membership._id || index} className="mb-8 flex flex-col items-center">
+                        <div className="w-full flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-gray-900">
+                                {membership.planName} Exclusive Membership
+                            </h2>
+                            <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase tracking-widest">Active</span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/10">
-                            {membership.plan_id?.discount_tiers?.map((tier, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-sm font-bold bg-white/10 p-2 rounded-xl">
-                                    <div className="w-5 h-5 bg-green-400 rounded-full flex items-center justify-center text-[10px] text-white">✓</div>
-                                    <span>{tier.discount || tier.discount_percentage}% OFF {tier.min_amount && `above ₹${tier.min_amount}`}</span>
+                        <MembershipCard 
+                            userName={profile.name || user?.name}
+                            cardNumber={membership.card_number}
+                            expiryDate={membership.expiry_date}
+                            planName={membership.planName}
+                        />
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-8 w-full">
+                            {membership.planDetails?.discount_tiers?.map((tier, idx) => (
+                                <div key={idx} className="flex items-center gap-2 text-sm font-bold bg-white border border-gray-100 shadow-sm p-3 rounded-2xl">
+                                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-[10px] text-white">✓</div>
+                                    <span className="text-gray-700">{tier.discount || tier.discount_percentage}% OFF {tier.min_amount && `above ₹${tier.min_amount}`}</span>
                                 </div>
                             ))}
                         </div>
-                    </Card>
-                )}
+                    </div>
+                ))}
 
-                {/* Active AMC Section */}
-                {amc && (
-                    <Card className="mb-6 bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-none shadow-emerald-500/20">
+                {/* Active AMC Section - Supports multiple AMCs */}
+                {profile?.amcs?.map((amc, index) => (
+                    <Card key={amc._id || index} className="mb-6 bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-none shadow-emerald-500/20">
                         <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-white/20 rounded-lg">
                                     <LucideShieldCheck className="text-emerald-300" size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-black">Active AMC Package</h2>
+                                    <h2 className="text-xl font-black">{amc.planName} AMC</h2>
                                     <p className="text-emerald-100 text-sm font-medium">#{amc.contract_number}</p>
                                 </div>
                             </div>
                             <div className="text-right">
                                 <p className="text-xs font-bold text-emerald-200 uppercase tracking-wider">Valid Till</p>
-                                <p className="text-lg font-black">{amc.end_date}</p>
+                                <p className="text-lg font-black">{amc.expiry}</p>
                             </div>
                         </div>
                         
-                        <div className="space-y-3 mt-4 pt-4 border-t border-white/10">
-                            <p className="text-xs font-bold text-emerald-200 uppercase tracking-widest">Included Plans</p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {amc.plans?.map((plan, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 text-sm font-bold bg-white/10 p-2 rounded-xl">
-                                        <div className="w-5 h-5 bg-emerald-400 rounded-full flex items-center justify-center text-[10px] text-white">✓</div>
-                                        <span>{plan.name} ({plan.service_category})</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {amc.technician_name && (
-                            <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                                        <FaUser size={12} />
-                                    </div>
-                                    <span className="text-xs font-bold text-emerald-100">Technician: <span className="text-white">{amc.technician_name}</span></span>
+                        {amc.plans_data && amc.plans_data.length > 0 && (
+                            <div className="space-y-3 mt-4 pt-4 border-t border-white/10">
+                                <p className="text-xs font-bold text-emerald-200 uppercase tracking-widest">Included Details</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {amc.plans_data.map((p, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 text-sm font-bold bg-white/10 p-2 rounded-xl">
+                                            <div className="w-5 h-5 bg-emerald-400 rounded-full flex items-center justify-center text-[10px] text-white">✓</div>
+                                            <span>{p.name}</span>
+                                        </div>
+                                    ))}
                                 </div>
-                                <span className="px-3 py-1 bg-emerald-500 text-[10px] font-black rounded-full uppercase tracking-widest leading-none">Status: {amc.status}</span>
                             </div>
                         )}
+
+                        <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                    <FaUser size={12} />
+                                </div>
+                                <span className="text-xs font-bold text-emerald-100">Technician: <span className="text-white">{amc.technician_name || 'Assigned Soon'}</span></span>
+                            </div>
+                            <span className="px-3 py-1 bg-emerald-500 text-[10px] font-black rounded-full uppercase tracking-widest leading-none">Status: {amc.status}</span>
+                        </div>
                     </Card>
-                )}
+                ))}
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

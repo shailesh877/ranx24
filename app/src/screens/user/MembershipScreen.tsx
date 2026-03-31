@@ -140,11 +140,31 @@ const MembershipScreen = ({ navigation }: any) => {
                     style={styles.planHeader}
                 >
                     <View style={styles.planHeaderContent}>
-                        <View>
+                        <View style={{ flex: 1, paddingRight: 10 }}>
                             <Text style={styles.planName}>{item.name}</Text>
-                            <Text style={styles.planPrice}>₹{item.price}<Text style={styles.planDuration}> / {item.duration_months} mo</Text></Text>
+                            
+                            {item.actual_price ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', marginRight: 6 }}>Regular Price</Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, fontWeight: 'bold', textDecorationLine: 'line-through' }}>
+                                        ₹{item.actual_price}
+                                    </Text>
+                                </View>
+                            ) : null}
+
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6, marginRight: 8 }}>
+                                    <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }}>Offer Price</Text>
+                                </View>
+                                <Text style={styles.planPrice}>₹{item.price}<Text style={styles.planDuration}> / {item.duration_months} mo</Text></Text>
+                            </View>
+
+                            <View style={{ backgroundColor: '#EF4444', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3, elevation: 3 }}>
+                                <Ionicons name="flash" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
+                                <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }}>OFFER VALID FOR FIRST 100 CUSTOMERS ONLY!</Text>
+                            </View>
                         </View>
-                        <Ionicons name="ribbon" size={40} color="rgba(255,255,255,0.3)" />
+                        <Ionicons name="ribbon" size={60} color="rgba(255,255,255,0.2)" />
                     </View>
                 </LinearGradient>
 

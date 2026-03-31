@@ -288,7 +288,7 @@ const WorkerManagement = () => {
                   </div>
                 </td>
                 <td className="px-3 py-3 text-center">
-                  <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${worker.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : worker.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${worker.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : worker.status === 'approved' ? 'bg-green-100 text-green-800' : worker.status === 'inactive' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}`}>
                     {worker.status}
                   </span>
                 </td>

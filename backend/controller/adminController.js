@@ -19,38 +19,48 @@ export const getAllUsers = async (req, res) => {
 
     // Enrich users with active membership and AMC
     const enrichedUsers = await Promise.all(users.map(async (user) => {
-      // Use regex for case-insensitive status check
-      const membership = await UserMembership.findOne({
-        customer_id: user._id,
+      // Robust manual enrichment to bypass population failures on type mismatch
+      let membership = await UserMembership.findOne({
+        $or: [
+          { customer_id: user._id },
+          { customer_id: user._id.toString() }
+        ],
         status: { $regex: /^active$/i }
-      }).populate('plan_id').lean();
+      }).lean();
 
-      const amc = await UserAMC.findOne({
-        customer_id: user._id,
-        status: { $regex: /^active$/i }
-      }).populate('plans').lean();
-
-      const result = {
-        ...user,
-        membership: membership ? {
-          planName: membership.plan_id?.name || 'Active Plan',
-          expiry: membership.expiry_date
-        } : null,
-        amc: amc ? {
-          planName: amc.plans?.[0]?.name || 'Active AMC', // Take first plan name
-          contractNumber: amc.contract_number,
-          expiry: amc.end_date
-        } : null
-      };
-
-      if (membership || amc) {
-        console.log(`✅ Enriched user ${user.name} (${user.mobileNumber || user.phone}):`, {
-          hasMembership: !!membership,
-          hasAMC: !!amc
-        });
+      if (membership && membership.plan_id) {
+        const plan = await MembershipPlan.findById(membership.plan_id).lean();
+        membership.planName = plan?.name || 'Active Plan';
+        membership.expiry = membership.expiry_date;
       }
 
-      return result;
+      let amc = await UserAMC.findOne({
+        $or: [
+          { customer_id: user._id },
+          { customer_id: user._id.toString() }
+        ],
+        status: { $regex: /^active$/i }
+      }).lean();
+
+      if (amc && amc.plans && amc.plans.length > 0) {
+        const amcPlan = await AMCPlan.findById(amc.plans[0]).lean();
+        amc.planName = amcPlan?.name || 'Active AMC';
+        amc.contractNumber = amc.contract_number;
+        amc.expiry = amc.end_date;
+      }
+
+      return {
+        ...user,
+        membership: membership ? {
+          planName: membership.planName,
+          expiry: membership.expiry
+        } : null,
+        amc: amc ? {
+          planName: amc.planName,
+          contractNumber: amc.contractNumber,
+          expiry: amc.expiry
+        } : null
+      };
     }));
 
     res.json(enrichedUsers);

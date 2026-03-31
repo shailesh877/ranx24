@@ -5,11 +5,19 @@ import Service from '../model/Service.js';
 // @access  Public
 export const getServices = async (req, res) => {
     try {
-        const { category, subCategory } = req.query;
-        const query = { isActive: true };
+        const { category, subCategory, cityId } = req.query;
+        let query = { isActive: true };
 
         if (category) query.category = category;
         if (subCategory) query.subCategory = subCategory;
+
+        // City filtering logic
+        if (cityId) {
+            query.$or = [
+                { availableCities: { $exists: true, $size: 0 } },
+                { availableCities: cityId }
+            ];
+        }
 
         const services = await Service.find(query).populate('category', 'name subCategories');
 
@@ -73,7 +81,7 @@ export const getServiceById = async (req, res) => {
 // @access  Private/Admin
 export const createService = async (req, res) => {
     try {
-        const { name, category, subCategory, description, basePrice, priceUnit } = req.body;
+        const { name, category, subCategory, description, basePrice, priceUnit, availableCities } = req.body;
 
         let image = req.body.image;
         if (req.files && req.files.image) {
@@ -88,6 +96,7 @@ export const createService = async (req, res) => {
             basePrice,
             priceUnit,
             image,
+            availableCities: availableCities ? (typeof availableCities === 'string' ? JSON.parse(availableCities) : availableCities) : [],
         });
 
         const createdService = await service.save();
@@ -102,7 +111,7 @@ export const createService = async (req, res) => {
 // @access  Private/Admin
 export const updateService = async (req, res) => {
     try {
-        const { name, category, subCategory, description, basePrice, priceUnit, isActive } = req.body;
+        const { name, category, subCategory, description, basePrice, priceUnit, isActive, availableCities } = req.body;
 
         const service = await Service.findById(req.params.id);
 
@@ -114,6 +123,10 @@ export const updateService = async (req, res) => {
             service.basePrice = basePrice || service.basePrice;
             service.priceUnit = priceUnit || service.priceUnit;
             service.isActive = isActive !== undefined ? isActive : service.isActive;
+            
+            if (availableCities !== undefined) {
+                service.availableCities = typeof availableCities === 'string' ? JSON.parse(availableCities) : availableCities;
+            }
 
             if (req.files && req.files.image) {
                 service.image = req.files.image[0].path;

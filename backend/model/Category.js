@@ -10,6 +10,10 @@ const subCategorySchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  availableCities: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'City'
+  }],
 });
 
 const categorySchema = new mongoose.Schema({

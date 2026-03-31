@@ -26,6 +26,12 @@ const WorkerEditModal = ({ worker, onClose, onRefresh }) => {
     const [allCities, setAllCities] = useState([]);
     const [availableServices, setAvailableServices] = useState([]);
 
+    // Get unique category names from available services
+    const uniqueCategories = React.useMemo(() => {
+        const cats = availableServices.map(s => s.category?.name).filter(Boolean);
+        return [...new Set(cats)].sort();
+    }, [availableServices]);
+
     // Fetch list of all cities and services
     useEffect(() => {
         const fetchData = async () => {
@@ -65,6 +71,18 @@ const WorkerEditModal = ({ worker, onClose, onRefresh }) => {
         }));
     };
 
+    const handleCategoryChange = (index, categoryName) => {
+        const updated = [...formData.services];
+        updated[index] = {
+            ...updated[index],
+            categoryName: categoryName,
+            serviceId: '',
+            serviceName: '',
+            price: 0
+        };
+        setFormData((prev) => ({ ...prev, services: updated }));
+    };
+
     const handleServiceSelect = (index, serviceId) => {
         const selectedService = availableServices.find(s => s._id === serviceId);
         if (!selectedService) return;
@@ -72,9 +90,9 @@ const WorkerEditModal = ({ worker, onClose, onRefresh }) => {
         const updated = [...formData.services];
         updated[index] = {
             ...updated[index],
-            serviceId: selectedService._id, // Store original service ID reference if needed
+            serviceId: selectedService._id,
             serviceName: selectedService.name,
-            categoryName: selectedService.category?.name || '',
+            categoryName: selectedService.category?.name || updated[index].categoryName,
             price: selectedService.basePrice,
             isActive: true
         };
@@ -263,6 +281,7 @@ const WorkerEditModal = ({ worker, onClose, onRefresh }) => {
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
                             <option value="rejected">Rejected</option>
+                            <option value="inactive">Inactive</option>
                         </select>
                     </div>
                 </div>
@@ -390,50 +409,76 @@ const WorkerEditModal = ({ worker, onClose, onRefresh }) => {
 
                 {/* Services */}
                 <h3 className="text-xl font-semibold text-blue-800 mb-2">Services & Pricing</h3>
-                {formData.services.map((svc, idx) => (
-                    <div key={idx} className="flex items-center gap-2 mb-2 border p-2 rounded bg-gray-50">
-                        <select
-                            className="border p-1 rounded flex-1"
-                            value={availableServices.find(s => s.name === svc.serviceName)?._id || ''}
-                            onChange={(e) => handleServiceSelect(idx, e.target.value)}
-                        >
-                            <option value="">Select Service</option>
-                            {availableServices.map(s => (
-                                <option key={s._id} value={s._id}>
-                                    {s.name}
-                                </option>
-                            ))}
-                        </select>
+                {formData.services.map((svc, idx) => {
+                    // Filter services based on chosen category for this row
+                    const filteredServices = availableServices.filter(s => s.category?.name === svc.categoryName);
 
-                        <input
-                            placeholder="Category"
-                            value={svc.categoryName}
-                            readOnly
-                            className="border p-1 rounded flex-1 bg-gray-100"
-                        />
-                        <input
-                            type="number"
-                            placeholder="Price"
-                            value={svc.price}
-                            onChange={(e) => updateService(idx, 'price', e.target.value)}
-                            className="border p-1 rounded w-24"
-                        />
-                        <label className="flex items-center gap-1 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={svc.isActive}
-                                onChange={(e) => updateService(idx, 'isActive', e.target.checked)}
-                            />
-                            Active
-                        </label>
-                        <button
-                            onClick={() => removeService(idx)}
-                            className="text-red-600 hover:text-red-800"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                ))}
+                    return (
+                        <div key={idx} className="flex flex-wrap items-center gap-2 mb-2 border p-3 rounded bg-gray-50 border-gray-200">
+                            {/* Category Dropdown first */}
+                            <div className="flex-1 min-w-[150px]">
+                                <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Category</label>
+                                <select
+                                    className="w-full border p-1 rounded bg-white"
+                                    value={svc.categoryName}
+                                    onChange={(e) => handleCategoryChange(idx, e.target.value)}
+                                >
+                                    <option value="">Select Category</option>
+                                    {uniqueCategories.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Service Dropdown (Filtered) */}
+                            <div className="flex-1 min-w-[200px]">
+                                <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Service</label>
+                                <select
+                                    className="w-full border p-1 rounded bg-white disabled:bg-gray-100"
+                                    value={svc.serviceId || availableServices.find(s => s.name === svc.serviceName)?._id || ''}
+                                    onChange={(e) => handleServiceSelect(idx, e.target.value)}
+                                    disabled={!svc.categoryName}
+                                >
+                                    <option value="">Select Service</option>
+                                    {filteredServices.map(s => (
+                                        <option key={s._id} value={s._id}>
+                                            {s.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="w-20">
+                                <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Price</label>
+                                <input
+                                    type="number"
+                                    placeholder="Price"
+                                    value={svc.price}
+                                    onChange={(e) => updateService(idx, 'price', e.target.value)}
+                                    className="w-full border p-1 rounded bg-white"
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-1 mt-4">
+                                <input
+                                    type="checkbox"
+                                    checked={svc.isActive}
+                                    onChange={(e) => updateService(idx, 'isActive', e.target.checked)}
+                                    className="w-4 h-4 cursor-pointer"
+                                />
+                                <span className="text-xs font-semibold text-gray-600">Active</span>
+                            </div>
+
+                            <button
+                                onClick={() => removeService(idx)}
+                                className="mt-4 text-red-500 hover:text-red-700 p-1"
+                                title="Remove Service"
+                            >
+                                <i className="fa-solid fa-trash-can" />
+                            </button>
+                        </div>
+                    );
+                })}
                 <button
                     onClick={addService}
                     className="mt-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"

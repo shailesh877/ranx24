@@ -8,7 +8,7 @@ import { toBoolean } from '../utils/typeConverter.js';
 // @access  Private/Admin
 const createCoupon = async (req, res) => {
     try {
-        const { code, description, type, value, minOrderValue, maxDiscount, usageLimit, userUsageLimit, validFrom, validUntil, applicableOn } = req.body;
+        const { code, description, type, value, minOrderValue, maxDiscount, usageLimit, userUsageLimit, validFrom, validUntil, applicableOn, specificService } = req.body;
 
         // Check if coupon code already exists
         const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() });
@@ -28,6 +28,7 @@ const createCoupon = async (req, res) => {
             validFrom: validFrom || Date.now(),
             validUntil,
             applicableOn: applicableOn || 'all',
+            specificService: (applicableOn === 'specific-service') ? specificService : null,
             createdBy: req.user._id
         });
 
@@ -80,7 +81,7 @@ const updateCoupon = async (req, res) => {
             return res.status(404).json({ message: 'Coupon not found' });
         }
 
-        const { code, description, type, value, minOrderValue, maxDiscount, usageLimit, userUsageLimit, validFrom, validUntil, isActive, applicableOn } = req.body;
+        const { code, description, type, value, minOrderValue, maxDiscount, usageLimit, userUsageLimit, validFrom, validUntil, isActive, applicableOn, specificService } = req.body;
 
         // Update fields
         if (code) coupon.code = code.toUpperCase();
@@ -93,8 +94,9 @@ const updateCoupon = async (req, res) => {
         if (userUsageLimit !== undefined) coupon.userUsageLimit = userUsageLimit;
         if (validFrom !== undefined) coupon.validFrom = validFrom;
         if (validUntil !== undefined) coupon.validUntil = validUntil;
-        if (isActive !== undefined) coupon.isActive = toBoolean(isActive);
         if (applicableOn) coupon.applicableOn = applicableOn;
+        if (specificService !== undefined) coupon.specificService = (applicableOn === 'specific-service') ? (specificService || null) : null;
+        if (isActive !== undefined) coupon.isActive = toBoolean(isActive);
 
         const updatedCoupon = await coupon.save();
         res.status(200).json({ message: 'Coupon updated successfully', coupon: updatedCoupon });
@@ -146,7 +148,7 @@ const toggleCouponStatus = async (req, res) => {
 // @access  Private/User
 const validateCoupon = async (req, res) => {
     try {
-        const { code, orderValue, orderAmount } = req.body;
+        const { code, orderValue, orderAmount, serviceId } = req.body;
         const userId = req.user._id;
         const amount = orderValue || orderAmount || 0;
 
@@ -189,6 +191,16 @@ const validateCoupon = async (req, res) => {
                 message: `Minimum order value of ₹${coupon.minOrderValue} required`,
                 valid: false
             });
+        }
+
+        // Handle specific service restriction
+        if (coupon.applicableOn === 'specific-service' && coupon.specificService) {
+            if (!serviceId || serviceId.toString() !== coupon.specificService.toString()) {
+                return res.status(200).json({
+                    message: `This coupon is only valid for a specific service`,
+                    valid: false
+                });
+            }
         }
 
         // Calculate discount

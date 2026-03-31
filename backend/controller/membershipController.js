@@ -39,13 +39,17 @@ export const buyMembership = async (req, res, next) => {
         expiry.setMonth(start.getMonth() + parseInt(plan.duration_months));
 
         const formatDate = (date) => date.toISOString().split('T')[0];
+        
+        // Generate a random 11-digit card number
+        const cardNumber = Math.floor(10000000000 + Math.random() * 90000000000).toString();
 
         const newMembership = await UserMembership.create({
             customer_id: userId,
             plan_id: planId,
             start_date: formatDate(start),
             expiry_date: formatDate(expiry),
-            status: 'Active'
+            status: 'Active',
+            card_number: cardNumber
         });
 
         res.status(201).json({
@@ -61,8 +65,15 @@ export const getMyMembership = async (req, res, next) => {
     try {
         const membership = await UserMembership.findOne({ 
             customer_id: req.user._id,
-            status: 'Active' 
+            status: { $regex: /^active$/i }
         }).populate('plan_id');
+
+        // If membership exists but has no card number (old members), generate one now
+        if (membership && !membership.card_number) {
+            membership.card_number = Math.floor(10000000000 + Math.random() * 90000000000).toString();
+            await membership.save();
+            console.log(`📡 Backfilled card number for member: ${membership.card_number}`);
+        }
 
         res.status(200).json({
             success: true,

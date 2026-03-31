@@ -31,12 +31,21 @@ export const getCategories = async (req, res) => {
     }
 
     // Default: Return all categories if no city provided
-    // Try to get from cache
-    const categories = await cacheService.wrap(
-      cacheKeys.categories(),
-      async () => await Category.find({}),
-      cacheTTL.long // Cache for 30 minutes
-    );
+    const categories = await Category.find({});
+    
+    // If city is provided, filter subcategories within each category
+    if (cityName) {
+        const cityConfig = await City.findOne({ name: { $regex: new RegExp(`^${cityName}$`, 'i') } });
+        if (cityConfig) {
+            return res.json(categories.map(cat => {
+                const catObj = cat.toObject();
+                catObj.subCategories = catObj.subCategories.filter(sub => 
+                    !sub.availableCities || sub.availableCities.length === 0 || sub.availableCities.includes(cityConfig._id)
+                );
+                return catObj;
+            }));
+        }
+    }
 
     res.json(categories);
   } catch (error) {
@@ -167,18 +176,12 @@ export const getCategoryById = async (req, res) => {
       const cityConfig = await City.findOne({ name: { $regex: new RegExp(`^${cityName}$`, 'i') } });
 
       if (cityConfig) {
-        const categoryConfig = cityConfig.assignedCategories?.find(ac => ac.category === category.name);
-
-        if (categoryConfig && categoryConfig.subCategories?.length > 0) {
-          // Return ONLY the subcategories assigned by Admin
-          const filteredSubCategories = category.subCategories.filter(sub =>
-            categoryConfig.subCategories.includes(sub.name)
-          );
-
-          const categoryObj = category.toObject();
-          categoryObj.subCategories = filteredSubCategories;
-          return res.json(categoryObj);
-        }
+        // Filter subcategories by city availability
+        const categoryObj = category.toObject();
+        categoryObj.subCategories = categoryObj.subCategories.filter(sub => 
+            !sub.availableCities || sub.availableCities.length === 0 || sub.availableCities.includes(cityConfig._id)
+        );
+        return res.json(categoryObj);
       }
     }
 
@@ -193,7 +196,7 @@ export const getCategoryById = async (req, res) => {
 // @route   POST /api/categories/:id/subcategories
 // @access  Admin
 export const createSubCategory = async (req, res) => {
-  const { name } = req.body;
+  const { name, availableCities } = req.body;
   let imagePath = '';
 
   if (req.file) {
@@ -218,7 +221,11 @@ export const createSubCategory = async (req, res) => {
         return res.status(400).json({ message: 'Sub-category already exists' });
       }
 
-      const subCategory = { name, image: imagePath };
+      const subCategory = { 
+        name, 
+        image: imagePath,
+        availableCities: availableCities ? (typeof availableCities === 'string' ? JSON.parse(availableCities) : availableCities) : []
+      };
       category.subCategories.push(subCategory);
       await category.save();
       cacheService.delete(cacheKeys.categories()); // Invalidate cache
@@ -247,7 +254,7 @@ export const createSubCategory = async (req, res) => {
 // @route   PUT /api/categories/:id/subcategories/:subId
 // @access  Admin
 export const updateSubCategory = async (req, res) => {
-  const { name } = req.body;
+  const { name, availableCities } = req.body;
   let newImagePath = '';
 
   if (req.file) {
@@ -273,6 +280,10 @@ export const updateSubCategory = async (req, res) => {
             }
           }
           subCategory.image = newImagePath;
+        }
+
+        if (availableCities !== undefined) {
+          subCategory.availableCities = typeof availableCities === 'string' ? JSON.parse(availableCities) : availableCities;
         }
 
         await category.save();

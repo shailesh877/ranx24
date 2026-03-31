@@ -180,7 +180,9 @@ export default function Navbar() {
                     </div>
                     <div className="text-left hidden lg:block">
                       <p className="text-[13px] font-bold text-gray-900 leading-tight">{user?.name?.split(' ')[0]}</p>
-                      <p className="text-[10px] font-bold text-blue-600/70 uppercase tracking-tighter">Gold Member</p>
+                      <p className="text-[10px] font-bold text-blue-600/70 uppercase tracking-tighter">
+                        {user?.membership?.planName || 'Registered User'}
+                      </p>
                     </div>
                     <LucideChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${showProfileDropdown ? 'rotate-180' : ''}`} />
                   </button>

@@ -23,6 +23,11 @@ const userMembershipSchema = new mongoose.Schema({
         type: String,
         enum: ['Active', 'Inactive', 'Expired'],
         default: 'Active'
+    },
+    card_number: {
+        type: String,
+        unique: true,
+        sparse: true // Allow null for existing records but unique for new ones
     }
 }, {
     timestamps: {

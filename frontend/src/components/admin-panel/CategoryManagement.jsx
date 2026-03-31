@@ -10,7 +10,8 @@ const CategoryManagement = () => {
     deleteCategory,
     addSubCategory,
     updateSubCategory,
-    deleteSubCategory
+    deleteSubCategory,
+    cities
   } = useAdmin();
 
   // Category State
@@ -19,7 +20,7 @@ const CategoryManagement = () => {
   const [categoryImage, setCategoryImage] = useState(null);
 
   // SubCategory State
-  const [subForm, setSubForm] = useState({ name: "", parentId: "" });
+  const [subForm, setSubForm] = useState({ name: "", parentId: "", availableCities: [] });
   const [editingSub, setEditingSub] = useState(null);
   const [subCategoryImage, setSubCategoryImage] = useState(null);
 
@@ -59,6 +60,7 @@ const CategoryManagement = () => {
 
     const formData = new FormData();
     formData.append('name', subForm.name);
+    formData.append('availableCities', JSON.stringify(subForm.availableCities || []));
     if (subCategoryImage) formData.append('image', subCategoryImage);
 
     let success;
@@ -69,7 +71,7 @@ const CategoryManagement = () => {
     }
 
     if (success) {
-      setSubForm({ name: "", parentId: "" });
+      setSubForm({ name: "", parentId: "", availableCities: [] });
       setEditingSub(null);
       setSubCategoryImage(null);
     }
@@ -77,8 +79,18 @@ const CategoryManagement = () => {
 
   const handleEditSub = (sub) => {
     setEditingSub(sub);
-    setSubForm({ name: sub.name, parentId: sub.parentId });
+    setSubForm({ name: sub.name, parentId: sub.parentId, availableCities: sub.availableCities || [] });
     setSubCategoryImage(null);
+  };
+
+  const handleCityToggleSub = (cityId) => {
+    setSubForm(prev => {
+      const current = prev.availableCities || [];
+      const updated = current.includes(cityId)
+        ? current.filter(id => id !== cityId)
+        : [...current, cityId];
+      return { ...prev, availableCities: updated };
+    });
   };
 
   return (
@@ -139,9 +151,28 @@ const CategoryManagement = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Sub-Category Image</label>
             <input type="file" onChange={(e) => setSubCategoryImage(e.target.files[0])} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
           </div>
+          
+          <div className="mb-6">
+            <label className="block text-sm font-bold text-gray-700 mb-2">Available In Cities</label>
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-gray-100 rounded-lg bg-gray-50">
+                {cities.map(city => (
+                    <label key={city._id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-1 rounded transition-colors">
+                        <input
+                            type="checkbox"
+                            checked={subForm.availableCities?.includes(city._id)}
+                            onChange={() => handleCityToggleSub(city._id)}
+                            className="rounded text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-700">{city.name}</span>
+                    </label>
+                ))}
+                {cities.length === 0 && <span className="text-xs text-gray-400 italic">No cities found</span>}
+            </div>
+            <p className="text-[10px] text-gray-500 mt-1 italic">* Leave empty for all cities</p>
+          </div>
           <div className="flex gap-2">
             <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold transition">{editingSub ? 'Update' : 'Add'}</button>
-            {editingSub && <button type="button" onClick={() => { setEditingSub(null); setSubForm({ name: '', parentId: '' }); setSubCategoryImage(null); }} className="bg-gray-200 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Cancel</button>}
+            {editingSub && <button type="button" onClick={() => { setEditingSub(null); setSubForm({ name: '', parentId: '', availableCities: [] }); setSubCategoryImage(null); }} className="bg-gray-200 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Cancel</button>}
           </div>
         </form>
         <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-100">

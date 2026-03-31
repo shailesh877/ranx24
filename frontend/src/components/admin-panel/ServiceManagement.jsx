@@ -23,8 +23,10 @@ const ServiceManagement = () => {
         description: "",
         basePrice: "",
         priceUnit: "fixed",
-        isActive: true
+        isActive: true,
+        availableCities: []
     });
+    const [allCities, setAllCities] = useState([]);
     const [editingService, setEditingService] = useState(null);
     const [image, setImage] = useState(null);
 
@@ -43,8 +45,18 @@ const ServiceManagement = () => {
         }
     };
 
+    const fetchCities = async () => {
+        try {
+            const { data } = await axios.get(`${API_URL}/cities`);
+            setAllCities(data);
+        } catch (error) {
+            console.error("Error fetching cities:", error);
+        }
+    };
+
     useEffect(() => {
         fetchServices();
+        fetchCities();
     }, []);
 
     const handleSubmit = async (e) => {
@@ -61,6 +73,7 @@ const ServiceManagement = () => {
         formData.append('basePrice', form.basePrice);
         formData.append('priceUnit', form.priceUnit);
         formData.append('isActive', form.isActive);
+        formData.append('availableCities', JSON.stringify(form.availableCities));
         if (image) formData.append('image', image);
 
         let success;
@@ -78,7 +91,8 @@ const ServiceManagement = () => {
                 description: "",
                 basePrice: "",
                 priceUnit: "fixed",
-                isActive: true
+                isActive: true,
+                availableCities: []
             });
             setEditingService(null);
             setImage(null);
@@ -95,7 +109,8 @@ const ServiceManagement = () => {
             description: service.description || "",
             basePrice: service.basePrice,
             priceUnit: service.priceUnit || "fixed",
-            isActive: service.isActive
+            isActive: service.isActive,
+            availableCities: service.availableCities || []
         });
         setImage(null);
     };
@@ -108,6 +123,16 @@ const ServiceManagement = () => {
 
     // Filter subcategories based on selected category
     const filteredSubCategories = subCategories.filter(sub => sub.parentId === form.category);
+
+    const handleCityToggle = (cityId) => {
+        setForm(prev => {
+            const current = prev.availableCities || [];
+            const updated = current.includes(cityId)
+                ? current.filter(id => id !== cityId)
+                : [...current, cityId];
+            return { ...prev, availableCities: updated };
+        });
+    };
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
@@ -158,13 +183,32 @@ const ServiceManagement = () => {
 
                         <div className="flex items-center gap-2">
                             <input type="checkbox" id="isActive" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="rounded text-blue-600 focus:ring-blue-500" />
-                            <label htmlFor="isActive" className="text-sm font-medium text-gray-700">Active</label>
+                            <label htmlFor="isActive" className="text-sm font-medium text-gray-700">Active Status</label>
+                        </div>
+
+                        <div className="pt-2">
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Available In Cities</label>
+                            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-gray-100 rounded-lg bg-gray-50">
+                                {allCities.map(city => (
+                                    <label key={city._id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-1 rounded transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.availableCities?.includes(city._id)}
+                                            onChange={() => handleCityToggle(city._id)}
+                                            className="rounded text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="text-xs text-gray-700">{city.name}</span>
+                                    </label>
+                                ))}
+                                {allCities.length === 0 && <span className="text-xs text-gray-400 italic">No cities found</span>}
+                            </div>
+                            <p className="text-[10px] text-gray-500 mt-1 italic">* Leave empty for all cities</p>
                         </div>
                     </div>
 
                     <div className="flex gap-2 mt-6">
                         <button type="submit" className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold transition">{editingService ? 'Update Service' : 'Add Service'}</button>
-                        {editingService && <button type="button" onClick={() => { setEditingService(null); setForm({ name: "", category: "", subCategory: "", description: "", basePrice: "", priceUnit: "fixed", isActive: true }); setImage(null); }} className="bg-gray-200 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Cancel</button>}
+                        {editingService && <button type="button" onClick={() => { setEditingService(null); setForm({ name: "", category: "", subCategory: "", description: "", basePrice: "", priceUnit: "fixed", isActive: true, availableCities: [] }); setImage(null); }} className="bg-gray-200 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Cancel</button>}
                     </div>
                 </form>
             </div>

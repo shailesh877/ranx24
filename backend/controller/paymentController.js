@@ -162,15 +162,19 @@ export const verifyPayment = async (req, res) => {
                     const expiry = new Date();
                     expiry.setMonth(start.getMonth() + parseInt(plan.duration_months));
                     const formatDate = (date) => date.toISOString().split('T')[0];
+                    
+                    // Generate a random 11-digit card number
+                    const cardNumber = Math.floor(10000000000 + Math.random() * 90000000000).toString();
 
                     await UserMembership.create({
                         customer_id: req.user._id,
                         plan_id: planId,
                         start_date: formatDate(start),
                         expiry_date: formatDate(expiry),
-                        status: 'Active'
+                        status: 'Active',
+                        card_number: cardNumber
                     });
-                    console.log(`✅ Membership activated for user ${req.user._id}`);
+                    console.log(`✅ Membership activated for user ${req.user._id} with Card: ${cardNumber}`);
                 }
             } catch (error) {
                 console.error('❌ Error activating membership after payment:', error);
