@@ -182,9 +182,9 @@ export const verifyPayment = async (req, res) => {
         }
 
         // 4. Handle AMC Purchase
-        const { isAMCPurchase, planIds } = req.body;
+        const { isAMCPurchase, planIds, paymentMode } = req.body;
         if (isAMCPurchase && planIds && Array.isArray(planIds)) {
-            console.log(`🔍 Processing AMC purchase for planIds: ${planIds}`);
+            console.log(`🔍 Processing AMC purchase for planIds: ${planIds}, Mode: ${paymentMode}`);
             try {
                 const AMCPlan = (await import('../model/AMCPlan.js')).default;
                 const UserAMC = (await import('../model/UserAMC.js')).default;
@@ -197,19 +197,99 @@ export const verifyPayment = async (req, res) => {
                     const duration = plans[0].duration_months || 12;
                     end.setMonth(start.getMonth() + duration);
                     const formatDate = (date) => date.toISOString().split('T')[0];
+                    
+                    const totalVisits = plans.reduce((sum, p) => sum + (parseInt(p.number_of_visits) || 0), 0);
 
-                    await UserAMC.create({
+                    let totalPrincipal = 0;
+                    let totalInterest = 0;
+                    let numInstallments = 1;
+                    let emiType = 'Monthly';
+
+                    if (paymentMode === 'EMI') {
+                        // Aggregate logic for EMI
+                        plans.forEach(p => {
+                            const price = Number(p.total_price);
+                            totalPrincipal += price;
+                            totalInterest += Number(p.emi_interest_amount || 0);
+                        });
+                        // Use first plan's config for duration
+                        numInstallments = plans[0].emi_installments || 1;
+                        emiType = (plans[0].available_emi_frequencies && plans[0].available_emi_frequencies[0]) ? plans[0].available_emi_frequencies[0] : 'Monthly';
+                    } else {
+                        plans.forEach(p => {
+                            totalPrincipal += Number(p.total_price);
+                        });
+                    }
+
+                    const newUserAMC = await UserAMC.create({
                         customer_id: req.user._id,
                         contract_number: contractNumber,
                         plans: planIds,
                         start_date: formatDate(start),
                         end_date: formatDate(end),
-                        status: 'Active'
+                        status: 'Active',
+                        payment_mode: paymentMode || 'Full',
+                        total_principal: totalPrincipal,
+                        total_interest: totalInterest,
+                        total_visits: totalVisits,
+                        remaining_visits: totalVisits
                     });
-                    console.log(`✅ AMC Package activated for user ${req.user._id}`);
+
+                    if (paymentMode === 'EMI' && numInstallments > 0) {
+                        const AmcInstallment = (await import('../model/AmcInstallment.js')).default;
+                        const totalAmount = totalPrincipal + totalInterest;
+                        const amountPerInstallment = totalAmount / numInstallments;
+
+                        for (let i = 1; i <= numInstallments; i++) {
+                            const dueDate = new Date();
+                            if (emiType === 'Quarterly') {
+                                dueDate.setMonth(dueDate.getMonth() + ((i - 1) * 3));
+                            } else {
+                                dueDate.setMonth(dueDate.getMonth() + (i - 1));
+                            }
+
+                            // First installment is paid instantly
+                            const isPaid = i === 1;
+
+                            await AmcInstallment.create({
+                                user_amc_id: newUserAMC._id,
+                                customer_id: req.user._id,
+                                installment_number: i,
+                                amount_due: amountPerInstallment,
+                                due_date: dueDate,
+                                status: isPaid ? 'Paid' : 'Pending',
+                                payment_id: isPaid ? razorpay_payment_id : null,
+                                paid_at: isPaid ? new Date() : null
+                            });
+                        }
+                        console.log(`✅ AMC Package (EMI) activated. Installments created for user ${req.user._id}`);
+                    } else {
+                        console.log(`✅ AMC Package (Full) activated for user ${req.user._id}`);
+                    }
                 }
             } catch (error) {
                 console.error('❌ Error activating AMC package after payment:', error);
+            }
+        }
+
+        // 5. Handle AMC Installment Payment
+        const { isInstallmentPayment, installmentId } = req.body;
+        if (isInstallmentPayment && installmentId) {
+            console.log(`🔍 Processing AMC installment payment for: ${installmentId}`);
+            try {
+                const AmcInstallment = (await import('../model/AmcInstallment.js')).default;
+                const installment = await AmcInstallment.findById(installmentId);
+                
+                if (installment) {
+                    installment.status = 'Paid';
+                    installment.payment_id = razorpay_payment_id;
+                    installment.paid_at = new Date();
+                    await installment.save();
+
+                    console.log(`✅ AMC Installment ${installmentId} marked as Paid`);
+                }
+            } catch (error) {
+                console.error('❌ Error marking AMC installment as paid:', error);
             }
         }
 

@@ -27,8 +27,24 @@ const findWorker = async (workerId) => {
 export const updateWorkerDetails = async (req, res) => {
     try {
         const { id } = req.params;
-        const updates = req.body; // allowed fields validated on client side
+        const updates = req.body;
         const worker = await findWorker(id);
+
+        // Handle workerType fallback if empty
+        if (updates.workerType === '') {
+            updates.workerType = 'standard';
+        }
+
+        // Handle location sync if coordinates provided
+        const lat = updates.latitude || worker.latitude;
+        const lng = updates.longitude || worker.longitude;
+        if (lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+            worker.location = {
+                type: 'Point',
+                coordinates: [parseFloat(lng), parseFloat(lat)]
+            };
+        }
+
         Object.assign(worker, updates);
         await worker.save();
         res.json({ message: 'Worker details updated', worker });
@@ -54,7 +70,7 @@ export const addWorkerService = async (req, res) => {
             return res.status(400).json({ message: 'Service already exists for this worker' });
         }
         worker.servicePricing.push({
-            subCategory: subCategoryId ? mongoose.Types.ObjectId(subCategoryId) : null,
+            subCategory: subCategoryId ? new mongoose.Types.ObjectId(subCategoryId) : null,
             categoryName: categoryName || '',
             serviceName,
             price: parseFloat(price),
@@ -82,7 +98,7 @@ export const updateWorkerService = async (req, res) => {
         }
         if (serviceName) service.serviceName = serviceName;
         if (price != null) service.price = parseFloat(price);
-        if (subCategoryId) service.subCategory = mongoose.Types.ObjectId(subCategoryId);
+        if (subCategoryId) service.subCategory = new mongoose.Types.ObjectId(subCategoryId);
         if (categoryName) service.categoryName = categoryName;
         if (isActive != null) service.isActive = toBoolean(isActive);
         await worker.save();
@@ -104,7 +120,7 @@ export const removeWorkerService = async (req, res) => {
         if (!service) {
             return res.status(404).json({ message: 'Service not found' });
         }
-        service.remove();
+        worker.servicePricing.pull(serviceId);
         await worker.save();
         res.json({ message: 'Service removed', worker });
     } catch (error) {

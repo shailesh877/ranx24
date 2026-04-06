@@ -14,8 +14,8 @@ const getApiUrl = () => {
     // Development fallback
     if (__DEV__) {
         return Platform.OS === 'android'
-            ? "https://backend.ranx24.com/api"
-            : "https://backend.ranx24.com/api";
+            ? "http://192.168.1.10:5000/api"
+            : "http://192.168.1.10:5000/api";
     }
 
     // Production fallback

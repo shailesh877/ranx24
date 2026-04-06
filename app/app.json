@@ -2,7 +2,7 @@
   "expo": {
     "name": "RanX24",
     "slug": "ranx24",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -23,7 +23,7 @@
       "package": "com.RanX24.user",
       "jsEngine": "hermes",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 4,
+      "versionCode": 5,
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
@@ -64,6 +64,12 @@
             "useLegacyPackaging": true,
             "usesCleartextTraffic": true
           }
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow RanX24 to access your camera to scan verification QR codes."
         }
       ]
     ],

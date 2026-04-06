@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import WorkerEditModal from './WorkerEditModal.jsx';
 import AddWorkerModal from './AddWorkerModal.jsx';
 import { useAdmin } from '../../context/AdminContext';
+import { QRCodeCanvas } from 'qrcode.react';
 
 const API_URL_BASE = import.meta.env.VITE_SERVER_URL || 'https://backend.ranx24.com';
 
@@ -26,6 +27,7 @@ const WorkerManagement = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddWorkerModal, setShowAddWorkerModal] = useState(false);
   const [selectedWorkerForEdit, setSelectedWorkerForEdit] = useState(null);
+  const [qrModalWorker, setQrModalWorker] = useState(null);
 
   // ---------------------------------------------------------------------
   // Data fetching
@@ -105,6 +107,19 @@ const WorkerManagement = () => {
 
   const refreshWorkers = () => {
     fetchWorkers();
+  };
+
+  const handleDownloadQR = () => {
+    const canvas = document.getElementById('worker-qr-canvas');
+    if (canvas) {
+      const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+      let downloadLink = document.createElement("a");
+      downloadLink.href = pngUrl;
+      downloadLink.download = `RanX24_Verified_${qrModalWorker?.firstName}_${qrModalWorker?.lastName}_QR.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
   };
 
   // ---------------------------------------------------------------------
@@ -259,12 +274,18 @@ const WorkerManagement = () => {
                 <td className="px-3 py-3">{worker.mobileNumber}</td>
                 <td className="px-3 py-3">
                   <div className="flex flex-wrap gap-1 max-w-xs">
-                    {worker.services?.map((s, i) => (
+                    {/* Prioritize servicePricing for display, fallback to legacy services array */}
+                    {(worker.servicePricing && worker.servicePricing.length > 0
+                      ? worker.servicePricing.filter(sp => sp.isActive).map(sp => sp.serviceName)
+                      : worker.services || []
+                    ).map((s, i) => (
                       <span key={i} className="inline-block bg-cyan-100 text-cyan-800 px-2 py-1 rounded font-bold text-xs">
                         {s}
                       </span>
                     ))}
-                    {(!worker.services || worker.services.length === 0) && <span className="text-gray-400 italic">No services</span>}
+                    {(!worker.services || worker.services.length === 0) && (!worker.servicePricing || worker.servicePricing.length === 0) && (
+                      <span className="text-gray-400 italic">No services</span>
+                    )}
                   </div>
                 </td>
                 <td className="px-3 py-3 text-center">
@@ -303,6 +324,11 @@ const WorkerManagement = () => {
                       </button>
                     </>
                   )}
+                  {worker.status === 'approved' && (
+                    <button onClick={() => setQrModalWorker(worker)} className="px-2 py-1 rounded bg-indigo-100 text-indigo-700 text-xs hover:bg-indigo-200 transition font-semibold shadow">
+                      <i className="fa-solid fa-qrcode" /> QR
+                    </button>
+                  )}
                   <button onClick={() => handleEditWorker(worker)} className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs hover:bg-gray-200 transition font-semibold shadow">
                     <i className="fa-solid fa-pen-to-square" /> Edit
                   </button>
@@ -330,6 +356,33 @@ const WorkerManagement = () => {
           onSave={handleAddWorker}
           onClose={() => setShowAddWorkerModal(false)}
         />
+      )}
+
+      {/* QR Code Modal for Download */}
+      {qrModalWorker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Worker Verification QR</h3>
+            <p className="text-sm text-gray-500 mb-6 text-center">{qrModalWorker.firstName} {qrModalWorker.lastName}</p>
+            
+            <div className="bg-white p-4 border-4 border-indigo-50 rounded-2xl shadow-sm mb-6 flex justify-center w-full">
+              <QRCodeCanvas 
+                id="worker-qr-canvas"
+                value={`https://ranx24.com/verify-worker/${qrModalWorker._id}`}
+                size={220}
+                level={"H"}
+                includeMargin={true}
+              />
+            </div>
+            
+            <div className="flex gap-4 w-full">
+              <button onClick={() => setQrModalWorker(null)} className="flex-1 py-2 rounded-lg border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition cursor-pointer">Cancel</button>
+              <button onClick={handleDownloadQR} className="flex-1 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition shadow-md flex items-center justify-center cursor-pointer">
+                 <i className="fa-solid fa-download mr-2"></i> Download Image
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

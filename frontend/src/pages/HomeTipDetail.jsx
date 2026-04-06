@@ -71,6 +71,15 @@ const HomeTipDetail = () => {
                         <p key={index} className="mb-4">{paragraph}</p>
                     ))}
                 </div>
+
+                {tip.link && (
+                    <div className="mt-8 p-6 bg-blue-50 rounded-xl border border-blue-100">
+                        <h3 className="text-lg font-bold text-blue-900 mb-2">Related Information</h3>
+                        <a href={tip.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-800 transition-colors">
+                            View Link / Watch Video <span className="text-xl">↗</span>
+                        </a>
+                    </div>
+                )}
             </div>
         </div>
     );

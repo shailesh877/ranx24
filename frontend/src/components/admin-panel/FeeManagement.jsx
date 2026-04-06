@@ -138,6 +138,25 @@ export default function FeeManagement() {
                             <p className="text-xs text-slate-500 mt-1">Percentage markup on service price</p>
                         </div>
                     </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                            Worker Registration Fee (Fixed)
+                        </label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                            <input
+                                type="number"
+                                name="workerRegistrationFee"
+                                value={config.workerRegistrationFee || 0}
+                                onChange={handleChange}
+                                min="0"
+                                className="w-full pl-8 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                placeholder="0"
+                            />
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">One-time fee charged to workers during registration. Set to 0 to disable.</p>
+                    </div>
                 </div>
 
                 <div className="pt-4 border-t border-slate-100 flex justify-end">

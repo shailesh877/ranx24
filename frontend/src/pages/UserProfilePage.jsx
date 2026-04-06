@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaUser, FaEdit, FaCog, FaWallet, FaMapMarkerAlt, FaHistory, FaStar, FaSignOutAlt, FaCrown } from 'react-icons/fa';
 import { MdWork, MdCardMembership } from 'react-icons/md';
-import { LucideShieldCheck } from 'lucide-react';
+import { LucideShieldCheck, LucideCalendarCheck, LucideAlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Skeleton from '../components/ui/Skeleton';
-import axiosInstance from '../utils/axiosConfig';
+import axiosInstance, { getRazorpayConfig } from '../utils/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import MembershipCard from '../components/MembershipCard';
 
@@ -78,6 +78,56 @@ export default function UserProfilePage() {
         }
     };
 
+
+    const handlePayInstallment = async (installment) => {
+        try {
+            const razorpayKey = await getRazorpayConfig();
+            
+            // 1. Create Order
+            const { data: orderData } = await axiosInstance.post(
+                `/payment/order`,
+                { amount: Math.round(installment.amount_due) }
+            );
+
+            // 2. Open Razorpay
+            const options = {
+                key: razorpayKey,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "RanX24",
+                description: `AMC EMI Installment #${installment.installment_number}`,
+                order_id: orderData.id,
+                handler: async function (response) {
+                    try {
+                        const verifyRes = await axiosInstance.post(
+                            `/payment/verify`,
+                            {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                isInstallmentPayment: true,
+                                installmentId: installment._id
+                            }
+                        );
+
+                        if (verifyRes.data.success) {
+                            toast.success(`Installment #${installment.installment_number} Paid Successfully!`);
+                            fetchProfile(); // Refresh Data
+                        } else {
+                            toast.error('Payment verification failed');
+                        }
+                    } catch (err) {
+                        toast.error('Payment failed');
+                    }
+                },
+                theme: { color: "#4F46E5" }
+            };
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+        } catch (error) {
+            toast.error('Error initiating EMI payment');
+        }
+    };
 
     const handleLogout = () => {
         logout();
@@ -205,6 +255,48 @@ export default function UserProfilePage() {
                             </div>
                             <span className="px-3 py-1 bg-emerald-500 text-[10px] font-black rounded-full uppercase tracking-widest leading-none">Status: {amc.status}</span>
                         </div>
+
+                        {/* Installments Block if EMI */}
+                        {amc.payment_mode === 'EMI' && amc.installments && amc.installments.length > 0 && (
+                            <div className="bg-white/10 p-4 rounded-b-2xl mt-4 border-t border-emerald-400/30">
+                                <p className="text-xs font-bold text-emerald-200 uppercase tracking-widest mb-3">Installment Schedule</p>
+                                <div className="space-y-3">
+                                    {amc.installments.map((inst, idx) => {
+                                        const isPaid = inst.status === 'Paid';
+                                        const isOverdue = new Date(inst.due_date) < new Date() && !isPaid;
+                                        return (
+                                            <div key={idx} className="flex justify-between items-center border-b border-emerald-400/20 pb-2 last:border-0 last:pb-0">
+                                                <div>
+                                                    <p className="text-sm font-bold text-white">Installment #{inst.installment_number}</p>
+                                                    <p className="text-[10px] text-emerald-100 uppercase tracking-wider">
+                                                        Due: {new Date(inst.due_date).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-black text-xl">₹{Math.round(inst.amount_due)}</span>
+                                                    {isPaid ? (
+                                                        <span className="flex flex-col items-center ml-2 bg-emerald-500/50 p-1.5 rounded-lg px-3 border border-emerald-400">
+                                                            <LucideCalendarCheck size={14} className="text-white" />
+                                                            <span className="text-[9px] text-white font-black uppercase mt-1">Paid</span>
+                                                        </span>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => handlePayInstallment(inst)}
+                                                            className={`ml-2 text-xs font-black uppercase tracking-widest py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm ${
+                                                                isOverdue ? 'bg-red-500 hover:bg-red-600 text-white border border-red-400' : 'bg-white hover:bg-emerald-50 text-emerald-700'
+                                                            }`}
+                                                        >
+                                                            {isOverdue && <LucideAlertCircle size={12} />}
+                                                            Pay Now
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </Card>
                 ))}
 

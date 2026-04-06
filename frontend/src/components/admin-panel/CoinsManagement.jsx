@@ -33,7 +33,7 @@ const CoinsManagement = () => {
 
     const fetchUsers = async () => {
         try {
-            const { data } = await api.get('/users');
+            const { data } = await api.get('/admin/users');
             setUsers(data);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -358,19 +358,19 @@ const CoinsManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {userBalances.map((user) => (
-                                <tr key={user._id} className="hover:bg-gray-50">
+                            {userBalances.map((item) => (
+                                <tr key={item._id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4">
-                                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                                        <div className="text-sm text-gray-500">{user.email}</div>
+                                        <div className="text-sm font-medium text-gray-900">{item.user?.name || 'Unknown User'}</div>
+                                        <div className="text-sm text-gray-500">{item.user?.email || item.user?.phone || 'No contact info'}</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
-                                            🪙 {user.coins}
+                                            🪙 {item.balance}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-500">
-                                        {new Date(user.updatedAt).toLocaleDateString()}
+                                        {new Date(item.updatedAt).toLocaleDateString()}
                                     </td>
                                 </tr>
                             ))}

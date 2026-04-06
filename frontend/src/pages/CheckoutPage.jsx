@@ -14,7 +14,8 @@ import {
   LucideChevronRight,
   LucideCalendar,
   LucideClock,
-  LucideLoader
+  LucideLoader,
+  LucideCheckCircle
 } from 'lucide-react';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'https://backend.ranx24.com';
@@ -118,8 +119,10 @@ export default function CheckoutPage() {
   };
 
   const calculateTotalPrice = () => {
-    const subtotal = calculateSubtotal();
-    const total = subtotal - membershipDiscount - couponDiscount - coinDiscount + platformFee + percentageFee;
+    const itemsTotal = calculateSubtotal();
+    const subtotalAfterDiscounts = itemsTotal - membershipDiscount - couponDiscount - coinDiscount + platformFee + percentageFee;
+    const gstAmount = Math.round(Math.max(0, subtotalAfterDiscounts) * 0.18);
+    const total = subtotalAfterDiscounts + gstAmount;
     return Math.max(0, total);
   };
 
@@ -152,7 +155,7 @@ export default function CheckoutPage() {
     const itemsTotal = calculateSubtotal();
     const tiers = activeMembership.plan_id.discount_tiers || [];
     let applicablePercentage = 0;
-    
+
     tiers.forEach((tier) => {
       const minAmount = parseFloat(tier.min_amount || 0);
       const discountPercent = parseFloat(tier.discount_percentage || 0);
@@ -192,15 +195,12 @@ export default function CheckoutPage() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const userId = JSON.parse(atob(token.split('.')[1]))._id;
-
       const { data } = await axiosInstance.post(
         `/coupons/validate`,
         {
           code: couponCode,
           orderValue: calculateSubtotal(),
-          userId
+          serviceIds: checkoutItems.map(item => item.serviceId).filter(id => id)
         }
       );
 
@@ -316,6 +316,7 @@ export default function CheckoutPage() {
           address: userAddress,
           platformFee,
           percentageFee,
+          gstAmount: Math.round(Math.max(0, calculateSubtotal() - membershipDiscount - couponDiscount - coinDiscount + platformFee + percentageFee) * 0.18),
           isAdvancePayment: true,
           advanceAmount: advanceRequired,
           amountPaid: advanceRequired
@@ -517,22 +518,22 @@ export default function CheckoutPage() {
                 <h2 className="font-bold text-gray-900 text-lg">Payment Method</h2>
               </div>
               <div className="p-5">
-                 <div
-                   className="relative p-5 rounded-xl border-2 border-blue-600 bg-blue-50/50 shadow-md shadow-blue-100"
-                 >
-                   <div className="flex items-center justify-between mb-3">
-                     <div className="bg-blue-100 p-2 rounded-lg">
-                       <LucideCreditCard className="text-blue-600" size={24} />
-                     </div>
-                     <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center border-blue-600">
-                       <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-                     </div>
-                   </div>
-                   <h3 className="font-bold text-gray-900">Online Payment (15% Advance)</h3>
-                   <p className="text-sm text-gray-500 mt-1">UPI, Cards, Net Banking</p>
-                 </div>
-                 <p className="text-xs text-gray-400 mt-3 italic text-center">Cash on delivery is not available for advance payments.</p>
-               </div>
+                <div
+                  className="relative p-5 rounded-xl border-2 border-blue-600 bg-blue-50/50 shadow-md shadow-blue-100"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <LucideCreditCard className="text-blue-600" size={24} />
+                    </div>
+                    <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center border-blue-600">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                    </div>
+                  </div>
+                  <h3 className="font-bold text-gray-900">Online Payment (15% Advance)</h3>
+                  <p className="text-sm text-gray-500 mt-1">UPI, Cards, Net Banking</p>
+                </div>
+                <p className="text-xs text-gray-400 mt-3 italic text-center">Cash on delivery is not available for advance payments.</p>
+              </div>
             </div>
           </div>
 
@@ -588,6 +589,11 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+                <div className="flex justify-between text-gray-600">
+                  <span>GST (18%)</span>
+                  <span>₹{Math.round(Math.max(0, calculateSubtotal() - membershipDiscount - couponDiscount - coinDiscount + platformFee + percentageFee) * 0.18)}</span>
+                </div>
+
                 <div className="border-t border-dashed border-gray-200 pt-4 mt-4">
                   <div className="flex justify-between items-end mb-4">
                     <div>
@@ -600,12 +606,12 @@ export default function CheckoutPage() {
 
                   <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                     <div className="flex justify-between mb-2">
-                        <span className="text-blue-900 font-bold">Advance Payment (15%)</span>
-                        <span className="text-blue-900 font-bold">₹{advanceRequired.toLocaleString()}</span>
+                      <span className="text-blue-900 font-bold">Advance Payment (15%)</span>
+                      <span className="text-blue-900 font-bold">₹{advanceRequired.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                        <span className="text-blue-700">Balance to pay later (85%)</span>
-                        <span className="text-blue-700">₹{remainingBalance.toLocaleString()}</span>
+                      <span className="text-blue-700">Balance to pay later (85%)</span>
+                      <span className="text-blue-700">₹{remainingBalance.toLocaleString()}</span>
                     </div>
                     <p className="text-[10px] text-blue-600 mt-2 italic">* Advance payment is required to confirm booking.</p>
                   </div>

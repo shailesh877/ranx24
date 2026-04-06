@@ -15,6 +15,7 @@ export default function AMCPlanPage() {
     const [selectedPlans, setSelectedPlans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [purchasing, setPurchasing] = useState(false);
+    const [isEmiSelected, setIsEmiSelected] = useState(false);
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -39,10 +40,20 @@ export default function AMCPlanPage() {
         );
     };
 
-    const totalPrice = selectedPlans.reduce((sum, id) => {
-        const plan = plans.find(p => p._id === id);
-        return sum + (plan ? parseFloat(plan.total_price) : 0);
-    }, 0);
+    const selectedPlansData = selectedPlans.map(id => plans.find(p => p._id === id)).filter(Boolean);
+    const canUseEmi = selectedPlansData.length > 0 && selectedPlansData.every(p => p.is_emi_available);
+
+    // Calculate Totals
+    const totalPrice = selectedPlansData.reduce((sum, p) => sum + parseFloat(p.total_price), 0);
+    const totalInterest = selectedPlansData.reduce((sum, p) => sum + parseFloat(p.emi_interest_amount || 0), 0);
+    const totalWithInterest = totalPrice + totalInterest;
+
+    // Use EMI config of first plan
+    const numInstallments = selectedPlansData[0]?.emi_installments || 1;
+    const emiType = selectedPlansData[0]?.available_emi_frequencies?.[0] || 'Monthly';
+    const amountPerInstallment = numInstallments > 0 ? (totalWithInterest / numInstallments) : totalWithInterest;
+
+    const finalAmountToChargeToday = isEmiSelected && canUseEmi ? amountPerInstallment : totalPrice;
 
     const handlePurchase = async () => {
         if (!isAuthenticated) {
@@ -63,7 +74,7 @@ export default function AMCPlanPage() {
             // 1. Create Order
             const { data: orderData } = await axiosInstance.post(
                 `/payment/order`,
-                { amount: totalPrice }
+                { amount: Math.round(finalAmountToChargeToday) }
             );
 
             // 2. Open Razorpay
@@ -84,7 +95,8 @@ export default function AMCPlanPage() {
                                 razorpay_payment_id: response.razorpay_payment_id,
                                 razorpay_signature: response.razorpay_signature,
                                 isAMCPurchase: true,
-                                planIds: selectedPlans
+                                planIds: selectedPlans,
+                                paymentMode: (isEmiSelected && canUseEmi) ? 'EMI' : 'Full'
                             }
                         );
 
@@ -244,9 +256,36 @@ export default function AMCPlanPage() {
                                     <span className="text-gray-500 font-bold">Total Plans</span>
                                     <span className="font-black text-gray-900">{selectedPlans.length}</span>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xl font-black text-gray-900">Total Price</span>
-                                    <span className="text-3xl font-black text-indigo-600 tracking-tight">₹{totalPrice}</span>
+                                
+                                {canUseEmi && (
+                                    <div className="mt-4 mb-4 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl cursor-pointer transition-all hover:bg-indigo-100" onClick={() => setIsEmiSelected(!isEmiSelected)}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={isEmiSelected}
+                                                    onChange={() => {}} // dummy onChange to prevent warning, actual trigger is on parent div
+                                                    className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                                                />
+                                                <span className="font-black text-indigo-900">Pay via EMI</span>
+                                            </div>
+                                            <span className="text-xs font-bold bg-white text-indigo-600 px-2 py-1 rounded-md shadow-sm">
+                                                {numInstallments} {emiType} Installments
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-indigo-700 leading-relaxed font-medium pl-7">
+                                            Total combined price is ₹{totalPrice}. <br/>
+                                            Total Interest applied is ₹{totalInterest.toFixed(0)}. <br/>
+                                            You will pay <strong className="text-indigo-900">₹{amountPerInstallment.toFixed(0)}</strong> today and the remaining in future cycles.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center mt-4">
+                                    <span className="text-xl font-black text-gray-900">
+                                        {(isEmiSelected && canUseEmi) ? 'Pay Today' : 'Total Price'}
+                                    </span>
+                                    <span className="text-3xl font-black text-indigo-600 tracking-tight">₹{Math.round(finalAmountToChargeToday)}</span>
                                 </div>
                             </div>
 

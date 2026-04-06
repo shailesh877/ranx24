@@ -48,7 +48,7 @@ export const getHomeTipById = async (req, res) => {
 // @route   POST /api/home-tips
 // @access  Admin
 export const createHomeTip = async (req, res) => {
-    const { title, content, active } = req.body;
+    const { title, content, active, link } = req.body;
     let imagePath = '';
 
     if (req.file) {
@@ -59,6 +59,7 @@ export const createHomeTip = async (req, res) => {
         const tip = new HomeTip({
             title,
             content,
+            link,
             image: imagePath,
             active: active === 'true' || active === true,
         });
@@ -80,7 +81,7 @@ export const createHomeTip = async (req, res) => {
 // @route   PUT /api/home-tips/:id
 // @access  Admin
 export const updateHomeTip = async (req, res) => {
-    const { title, content, active } = req.body;
+    const { title, content, active, link } = req.body;
 
     try {
         const tip = await HomeTip.findById(req.params.id);
@@ -88,6 +89,7 @@ export const updateHomeTip = async (req, res) => {
         if (tip) {
             if (title) tip.title = title;
             if (content) tip.content = content;
+            if (link !== undefined) tip.link = link;
             if (active !== undefined) tip.active = active === 'true' || active === true;
 
             if (req.file) {

@@ -109,8 +109,11 @@ const UserPage = () => {
           }
         }
 
-        const { data } = await axiosInstance.get(url);
-        setCategories(data);
+        // Final check: if categories still empty, fetch all as last resort
+        if (categories.length === 0) {
+          const { data: allData } = await axiosInstance.get('/categories');
+          setCategories(allData);
+        }
         setLoading(false);
       } catch (err) {
         setLoading(false);

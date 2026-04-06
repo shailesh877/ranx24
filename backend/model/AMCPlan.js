@@ -20,6 +20,22 @@ const amcPlanSchema = new mongoose.Schema({
     total_price: {
         type: String,
         required: true
+    },
+    is_emi_available: {
+        type: Boolean,
+        default: false
+    },
+    available_emi_frequencies: {
+        type: [String],
+        default: ['Monthly']
+    },
+    emi_installments: {
+        type: Number,
+        default: 1
+    },
+    emi_interest_amount: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: {

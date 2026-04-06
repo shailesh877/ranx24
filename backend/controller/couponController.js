@@ -148,9 +148,10 @@ const toggleCouponStatus = async (req, res) => {
 // @access  Private/User
 const validateCoupon = async (req, res) => {
     try {
-        const { code, orderValue, orderAmount, serviceId } = req.body;
+        const { code, orderValue, orderAmount, serviceId, serviceIds } = req.body;
         const userId = req.user._id;
         const amount = orderValue || orderAmount || 0;
+        const idsToCheck = Array.isArray(serviceIds) ? serviceIds : (serviceId ? [serviceId] : []);
 
         // Find coupon
         const coupon = await Coupon.findOne({ code: code.toUpperCase() });
@@ -195,7 +196,8 @@ const validateCoupon = async (req, res) => {
 
         // Handle specific service restriction
         if (coupon.applicableOn === 'specific-service' && coupon.specificService) {
-            if (!serviceId || serviceId.toString() !== coupon.specificService.toString()) {
+            const isApplicable = idsToCheck.some(id => id && id.toString() === coupon.specificService.toString());
+            if (!isApplicable) {
                 return res.status(200).json({
                     message: `This coupon is only valid for a specific service`,
                     valid: false

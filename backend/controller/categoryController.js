@@ -11,26 +11,34 @@ import cacheService, { cacheKeys, cacheTTL } from '../utils/cacheService.js';
 export const getCategories = async (req, res) => {
   try {
     const { city: cityName } = req.query;
+    console.log(`Fetching categories for city: [${cityName || 'All'}]`);
 
     // 1. Filter by Admin Assignments (City)
-    if (cityName) {
-      const cityConfig = await City.findOne({ name: { $regex: new RegExp(`^${cityName}$`, 'i') } });
+    if (cityName && cityName !== 'null' && cityName !== 'undefined') {
+      const cityConfig = await City.findOne({ name: { $regex: new RegExp(`^${cityName.trim()}$`, 'i') } });
 
       if (cityConfig && cityConfig.assignedCategories?.length > 0) {
         const adminAllowedCategories = cityConfig.assignedCategories.map(ac => ac.category);
+        console.log(`Found city config for ${cityName}, assigned categories:`, adminAllowedCategories);
 
         const categories = await Category.find({
           name: { $in: adminAllowedCategories }
         });
 
-        return res.json(categories);
+        if (categories.length > 0) {
+          return res.json(categories);
+        } else {
+          console.warn(`City ${cityName} has assignments but no matching Category documents found for names:`, adminAllowedCategories);
+        }
       } else if (cityConfig) {
-        // City exists but no categories assigned -> Return empty
-        return res.json([]);
+        console.warn(`City ${cityName} found but has no categories assigned.`);
+      } else {
+        console.log(`City ${cityName} not found in database.`);
       }
     }
 
-    // Default: Return all categories if no city provided
+    // Default: Return all categories if no city provided or city filter yields no results
+    console.log('Returning all categories as fallback/default');
     const categories = await Category.find({});
     
     // If city is provided, filter subcategories within each category

@@ -78,6 +78,7 @@ const addItemToCart = async (req, res) => {
         worker: workerId || undefined,
         category,
         service,
+        serviceId: serviceId || undefined,
         description: description || '',
         price,
         bookingType: bookingType || 'full-day',

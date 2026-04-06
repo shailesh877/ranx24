@@ -163,6 +163,7 @@ import homeTipRoutes from "./router/homeTipRoutes.js";
 import testimonialRoutes from "./router/testimonialRoutes.js";
 import membershipRoutes from "./router/membershipRoutes.js";
 import amcRoutes from "./router/amcRoutes.js";
+import feeRoutes from "./router/feeRoutes.js";
 
 // Use Routes
 app.use("/api/admin", adminRoutes);
@@ -195,6 +196,7 @@ app.use("/api/home-tips", homeTipRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/membership-plans", membershipRoutes);
 app.use("/api/amc-plans", amcRoutes);
+app.use("/api/fees", feeRoutes);
 
 // Health Check Endpoint
 app.get("/health", (req, res) => {

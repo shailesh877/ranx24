@@ -439,7 +439,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
 
                 <View style={styles.versionContainer}>
-                    <Text style={styles.versionText}>Version 1.0.0</Text>
+                    <Text style={styles.versionText}>Version 1.0.1</Text>
                     <Text style={styles.versionSubtext}>Build {Platform.OS === 'android' ? 'Android' : 'iOS'}</Text>
                 </View>
 

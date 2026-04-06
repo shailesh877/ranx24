@@ -42,6 +42,8 @@ import TermsScreen from '../screens/user/TermsScreen';
 import FAQScreen from '../screens/user/FAQScreen';
 import MembershipScreen from '../screens/user/MembershipScreen';
 import AMCScreen from '../screens/user/AMCScreen';
+import QRScannerScreen from '../screens/user/QRScannerScreen';
+import VerifyWorkerScreen from '../screens/user/VerifyWorkerScreen';
 
 // Worker Screens
 import WorkerDashboardScreen from '../screens/worker/WorkerDashboardScreen';
@@ -171,6 +173,9 @@ const AppNavigator: React.FC = () => {
                         <Stack.Screen name="FAQ" component={FAQScreen} />
                         <Stack.Screen name="Membership" component={MembershipScreen} />
                         <Stack.Screen name="AMC" component={AMCScreen} />
+                        
+                        <Stack.Screen name="QRScanner" component={QRScannerScreen} />
+                        <Stack.Screen name="VerifyWorker" component={VerifyWorkerScreen} />
                     </>
                 )}
             </Stack.Navigator>

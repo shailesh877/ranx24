@@ -26,7 +26,15 @@ export default function CategoriesPage() {
                 if (location.city) params.append('city', location.city);
             }
 
-            const { data } = await axiosInstance.get(`/categories?${params.toString()}`);
+            let { data } = await axiosInstance.get(`/categories?${params.toString()}`);
+            
+            // Fallback: if no services found for city, fetch all
+            if (data.length === 0 && params.has('city')) {
+                console.log('No categories found for city, falling back to all');
+                const fallbackRes = await axiosInstance.get('/categories');
+                data = fallbackRes.data;
+            }
+
             setCategories(data);
         } catch (error) {
             console.error('Error fetching categories:', error);

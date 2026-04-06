@@ -23,6 +23,32 @@ const userAMCSchema = new mongoose.Schema({
         type: String, // "YYYY-MM-DD"
         required: true
     },
+    payment_mode: {
+        type: String,
+        enum: ['Full', 'EMI'],
+        default: 'Full'
+    },
+    payment_status: {
+        type: String,
+        enum: ['Paid', 'Pending', 'Overdue'],
+        default: 'Paid'
+    },
+    total_principal: {
+        type: Number,
+        default: 0
+    },
+    total_interest: {
+        type: Number,
+        default: 0
+    },
+    total_visits: {
+        type: Number,
+        default: 0
+    },
+    remaining_visits: {
+        type: Number,
+        default: 0
+    },
     status: {
         type: String,
         enum: ['Active', 'Expired', 'Pending'],

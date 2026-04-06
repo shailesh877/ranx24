@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import toast from 'react-hot-toast';
+import { getRazorpayConfig } from "../../utils/axiosConfig";
 
 import LocationStep from "./LocationStep";
 import PersonalDetailsStep from "./PersonalDetailsStep";
 import VerificationStep from "./VerificationStep";
 import ServicesStep from "./ServicesStep";
+import PaymentStep from "./PaymentStep";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://backend.ranx24.com/api";
 
@@ -15,10 +17,15 @@ const STEPS = {
   2: PersonalDetailsStep,
   3: VerificationStep,
   4: ServicesStep,
+  5: PaymentStep,
 };
 
 export default function WorkerRegistrationPage() {
   const [currentStep, setCurrentStep] = useState(1);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [registrationFee, setRegistrationFee] = useState(0);
+  const [razorpayKey, setRazorpayKey] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate(); // Initialize useNavigate
 
   const [formData, setFormData] = useState({
@@ -44,8 +51,28 @@ export default function WorkerRegistrationPage() {
     servicePricing: [], // Initialize servicePricing
   });
 
+  const fetchRegistrationConfig = async () => {
+    try {
+      // 1. Fetch Fee
+      const feeRes = await axios.get(`${API_URL}/fees/registration-fee`);
+      setRegistrationFee(feeRes.data.registrationFee);
+
+      // 2. Fetch Razorpay Key if fee > 0
+      if (feeRes.data.registrationFee > 0) {
+        const key = await getRazorpayConfig();
+        setRazorpayKey(key);
+      }
+    } catch (error) {
+      console.error("Error fetching registration config:", error);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchRegistrationConfig();
+  }, []);
+
   const handleNext = () => {
-    if (currentStep < 4) setCurrentStep(currentStep + 1);
+    if (currentStep < 5) setCurrentStep(currentStep + 1);
   };
 
   const handlePrev = () => {
@@ -58,6 +85,51 @@ export default function WorkerRegistrationPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    let paymentId = "";
+
+    // Handle Payment if fee > 0
+    if (registrationFee > 0) {
+      if (!razorpayKey) {
+        toast.error("Payment system not ready. Please try again later.");
+        return;
+      }
+
+      try {
+        const paymentPromise = new Promise((resolve, reject) => {
+          const options = {
+            key: razorpayKey,
+            amount: registrationFee * 100, // in paise
+            currency: "INR",
+            name: "RanX24",
+            description: "Worker Registration Fee",
+            handler: function (response) {
+              resolve(response.razorpay_payment_id);
+            },
+            prefill: {
+              name: `${formData.firstName} ${formData.lastName}`,
+              email: formData.email,
+              contact: formData.mobileNumber,
+            },
+            theme: { color: "#2563EB" }, // blue-600
+            modal: {
+              ondismiss: function () {
+                reject(new Error("Payment cancelled"));
+              },
+            },
+          };
+
+          const rzp = new window.Razorpay(options);
+          rzp.open();
+        });
+
+        paymentId = await paymentPromise;
+      } catch (payError) {
+        console.error("Payment error:", payError);
+        toast.error("Registration fee payment is required.");
+        return;
+      }
+    }
 
     const data = new FormData();
 
@@ -102,6 +174,13 @@ export default function WorkerRegistrationPage() {
       data.append("servicePricing", JSON.stringify(formData.servicePricing));
     }
 
+    // append payment details
+    data.append("registrationFee", registrationFee.toString());
+    if (paymentId) {
+      data.append("paymentId", paymentId);
+    }
+
+    setIsSubmitting(true);
     try {
       const res = await axios.post(
         `${API_URL}/workers/register`,
@@ -118,6 +197,8 @@ export default function WorkerRegistrationPage() {
     } catch (err) {
       console.log("Error:", err);
       toast.error(err.response?.data?.message || "Registration failed.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -134,16 +215,11 @@ export default function WorkerRegistrationPage() {
           updateFormData={updateFormData}
           handleNext={handleNext}
           handlePrev={handlePrev}
+          registrationFee={registrationFee}
+          acceptedTerms={acceptedTerms}
+          setAcceptedTerms={setAcceptedTerms}
+          isSubmitting={isSubmitting} // Need to add this state
         />
-
-        {currentStep === 4 && (
-          <button
-            type="submit"
-            className="mt-6 w-full py-3 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
-          >
-            Submit For Verification
-          </button>
-        )}
       </form>
     </div>
   );

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import MembershipPlan from '../model/MembershipPlan.js';
 import UserMembership from '../model/UserMembership.js';
 import AppError from '../utils/AppError.js';
@@ -63,15 +64,39 @@ export const buyMembership = async (req, res, next) => {
 
 export const getMyMembership = async (req, res, next) => {
     try {
-        const membership = await UserMembership.findOne({ 
-            customer_id: req.user._id,
+        const db = mongoose.connection.db;
+        const membershipsRaw = await db.collection('memberships').find({
+            $or: [
+                { customer_id: req.user._id },
+                { customer_id: req.user._id.toString() }
+            ],
             status: { $regex: /^active$/i }
-        }).populate('plan_id');
+        }).toArray();
+
+        if (membershipsRaw.length === 0) {
+            return res.status(200).json({ success: true, data: null });
+        }
+
+        // Just operate on the first active one for backward compatibility
+        let membership = membershipsRaw[0];
+
+        if (membership.plan_id) {
+            const plan = await db.collection('membership_plans').findOne({
+                $or: [
+                    { _id: typeof membership.plan_id === 'string' && membership.plan_id.length === 24 ? new mongoose.Types.ObjectId(membership.plan_id) : membership.plan_id },
+                    { _id: membership.plan_id }
+                ]
+            });
+            membership.plan_id = plan; // populate
+        }
 
         // If membership exists but has no card number (old members), generate one now
-        if (membership && !membership.card_number) {
+        if (!membership.card_number) {
             membership.card_number = Math.floor(10000000000 + Math.random() * 90000000000).toString();
-            await membership.save();
+            await db.collection('memberships').updateOne(
+                { _id: membership._id },
+                { $set: { card_number: membership.card_number } }
+            );
             console.log(`📡 Backfilled card number for member: ${membership.card_number}`);
         }
 

@@ -8,6 +8,7 @@ import CouponUsage from '../model/CouponUsage.js';
 import CoinConfig from '../model/CoinConfig.js';
 import { ensureWallet, creditYCCoins } from './userwalletController.js';
 import Razorpay from 'razorpay';
+import mongoose from 'mongoose';
 import UserMembership from '../model/UserMembership.js';
 import MembershipPlan from '../model/MembershipPlan.js';
 import dotenv from 'dotenv';
@@ -54,31 +55,56 @@ export const getBookingsByQuery = async (req, res) => {
 // Helper: Calculate Membership Discount
 const getMembershipDiscount = async (userId, price) => {
   try {
-    const membership = await UserMembership.findOne({
-      customer_id: userId,
-      status: 'Active',
-      expiry_date: { $gte: new Date().toISOString().split('T')[0] }
-    }).populate('plan_id');
+    const db = mongoose.connection.db;
+    const today = new Date().toISOString().split('T')[0];
 
-    if (!membership || !membership.plan_id) return { discount: 0, planId: null };
+    const membershipsRaw = await db.collection('memberships').find({
+      $or: [
+        { customer_id: userId },
+        { customer_id: userId.toString() }
+      ],
+      status: { $regex: /^active$/i }
+    }).toArray();
 
-    const tiers = membership.plan_id.discount_tiers || [];
-    let applicablePercentage = 0;
+    const activeMemberships = membershipsRaw.filter(m => m.expiry_date >= today);
 
-    tiers.forEach(tier => {
-      const minAmount = parseFloat(tier.min_amount || 0);
-      const discountPercent = parseFloat(tier.discount_percentage || 0);
-      if (price >= minAmount && discountPercent > applicablePercentage) {
-        applicablePercentage = discountPercent;
+    if (activeMemberships.length === 0) return { discount: 0, planId: null };
+
+    let bestDiscount = 0;
+    let bestPlanId = null;
+
+    for (const membership of activeMemberships) {
+      if (!membership.plan_id) continue;
+
+      const planQuery = [
+        { _id: typeof membership.plan_id === 'string' && membership.plan_id.length === 24 ? new mongoose.Types.ObjectId(membership.plan_id) : membership.plan_id }
+      ];
+      
+      const plan = await db.collection('membership_plans').findOne({ $or: planQuery });
+
+      if (plan && plan.discount_tiers) {
+        const tiers = plan.discount_tiers || [];
+        let applicablePercentage = 0;
+
+        tiers.forEach(tier => {
+          const minAmount = parseFloat(tier.min_amount || 0);
+          const discountPercent = parseFloat(tier.discount_percentage || 0);
+          if (price >= minAmount && discountPercent > applicablePercentage) {
+            applicablePercentage = discountPercent;
+          }
+        });
+
+        if (applicablePercentage > 0) {
+          const discount = Math.round((price * applicablePercentage) / 100);
+          if (discount > bestDiscount) {
+            bestDiscount = discount;
+            bestPlanId = plan._id;
+          }
+        }
       }
-    });
-
-    if (applicablePercentage > 0) {
-      const discount = Math.round((price * applicablePercentage) / 100);
-      return { discount, planId: membership.plan_id._id };
     }
 
-    return { discount: 0, planId: membership.plan_id._id };
+    return { discount: bestDiscount, planId: bestPlanId };
   } catch (error) {
     console.error('Error calculating membership discount:', error);
     return { discount: 0, planId: null };
@@ -374,7 +400,8 @@ export const createBulkBookings = async (req, res) => {
     amountPaid,
     address, // Shared address for all bookings
     isAdvancePayment,
-    advanceAmount
+    advanceAmount,
+    gstAmount
   } = req.body;
 
   // Save address to user profile if provided
@@ -525,6 +552,11 @@ export const createBulkBookings = async (req, res) => {
       }
     }
 
+    // ========== NEW GST CALCULATION (Post-Discount) ==========
+    const subtotalAfterDiscounts = totalOrderPrice - totalMembershipDiscount - totalCouponDiscount - totalCoinDiscount;
+    const finalGstAmount = Math.round(subtotalAfterDiscounts * 0.18);
+    totalOrderPrice = subtotalAfterDiscounts + finalGstAmount;
+
     // 4. Wallet Payment (Once for the whole order)
     let totalWalletUsed = 0;
     if (walletAmountUsed && walletAmountUsed > 0) {
@@ -558,6 +590,7 @@ export const createBulkBookings = async (req, res) => {
     let remainingMembershipDiscount = totalMembershipDiscount;
     let remainingFees = platformFee + percentageFee;
     const totalFees = platformFee + percentageFee;
+    let remainingGstAmount = finalGstAmount;
 
     for (let i = 0; i < bookings.length; i++) {
       const item = bookings[i];
@@ -570,6 +603,7 @@ export const createBulkBookings = async (req, res) => {
       let itemWalletUsed = 0;
       let itemMembershipDiscount = 0;
       let itemFees = 0;
+      let itemGstAmount = 0;
 
       if (totalOrderPrice > 0) {
         if (isLast) {
@@ -586,6 +620,7 @@ export const createBulkBookings = async (req, res) => {
           itemWalletUsed = Math.floor((walletAmountUsed || 0) * ratio);
           itemMembershipDiscount = Math.floor(totalMembershipDiscount * ratio);
           itemFees = Math.floor(totalFees * ratio);
+          itemGstAmount = Math.floor(finalGstAmount * ratio);
 
           remainingCouponDiscount -= itemCouponDiscount;
           remainingCoinDiscount -= itemCoinDiscount;
@@ -593,15 +628,17 @@ export const createBulkBookings = async (req, res) => {
           remainingWalletUsed -= itemWalletUsed;
           remainingMembershipDiscount -= itemMembershipDiscount;
           remainingFees -= itemFees;
+          remainingGstAmount -= itemGstAmount;
         }
       }
 
       if (isLast) {
         itemFees = remainingFees;
+        itemGstAmount = remainingGstAmount;
       }
 
       const itemTotalPrice = item.price + itemFees;
-      const finalPrice = Math.max(0, itemTotalPrice - itemCouponDiscount - itemCoinDiscount - itemMembershipDiscount);
+      const finalPrice = Math.max(0, itemTotalPrice - itemCouponDiscount - itemCoinDiscount - itemMembershipDiscount + itemGstAmount);
 
       // Determine payment status for this item
       // If total order is fully paid by wallet, then this item is paid.
@@ -663,6 +700,7 @@ export const createBulkBookings = async (req, res) => {
         status: 'pending',
         platformFee: isLast ? (platformFee - (Math.floor(platformFee / bookings.length) * (bookings.length - 1))) : Math.floor(platformFee / bookings.length),
         percentageFee: isLast ? (percentageFee - (Math.floor(percentageFee / bookings.length) * (bookings.length - 1))) : Math.floor(percentageFee / bookings.length),
+        gstAmount: itemGstAmount,
         distance: distance,
         isAdvancePayment: isAdvancePayment || false,
         advanceAmount: isAdvancePayment ? (isLast ? (advanceAmount - Math.floor(advanceAmount / bookings.length) * (bookings.length - 1)) : Math.floor(advanceAmount / bookings.length)) : 0
@@ -770,7 +808,7 @@ export const getBookings = async (req, res) => {
 
     const [bookings, total] = await Promise.all([
       Booking.find(query)
-        .populate('user', 'name mobileNumber')
+        .populate('user', 'name phone mobileNumber')
         .populate('worker', 'firstName lastName mobileNumber')
         .sort({ createdAt: -1 })
         .skip(skip)

@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://backend.ranx24.com/api';
 
-export default function ServicesStep({ formData, updateFormData, handlePrev }) {
+export default function ServicesStep({ formData, updateFormData, handleNext, handlePrev }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -80,13 +80,13 @@ export default function ServicesStep({ formData, updateFormData, handlePrev }) {
     if (formData.categories.length === 0) {
       setValidationError('Please select at least one category.');
       e.preventDefault();
-      return;
+      return false;
     }
 
     if (missingPrices.length > 0) {
       setValidationError(`Please set prices for: ${missingPrices.join(', ')}`);
       e.preventDefault();
-      return;
+      return false;
     }
 
     // Build servicePricing array with category-level pricing applied to all selected services
@@ -110,6 +110,7 @@ export default function ServicesStep({ formData, updateFormData, handlePrev }) {
 
     updateFormData({ servicePricing });
     setValidationError('');
+    return true;
   };
 
   if (loading) {
@@ -216,8 +217,8 @@ export default function ServicesStep({ formData, updateFormData, handlePrev }) {
         <button type="button" onClick={handlePrev} className="group relative flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">
           Previous
         </button>
-        <button type="submit" onClick={handleSubmit} className="group relative flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-          Submit for Verification
+        <button type="button" onClick={(e) => { if (handleSubmit(e)) handleNext(); }} className="group relative flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+          Next
         </button>
       </div>
     </div>

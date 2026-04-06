@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import RazorpayCheckout from 'react-native-razorpay';
 import api, { API_URL } from '../../services/api';
 import { theme } from '../../theme/theme';
 
@@ -41,6 +42,9 @@ const RegisterScreen = ({ navigation }: any) => {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [isAgreed, setIsAgreed] = useState(false);
+    const [registrationFee, setRegistrationFee] = useState(0);
+    const [razorpayKey, setRazorpayKey] = useState('');
 
     const [formData, setFormData] = useState<RegisterFormData>({
         firstName: '',
@@ -128,6 +132,10 @@ const RegisterScreen = ({ navigation }: any) => {
             Alert.alert('Invalid Aadhaar', 'Aadhaar number must be 12 digits');
             return false;
         }
+        if (!isAgreed) {
+            Alert.alert('Agreement Required', 'Please accept the Terms & Conditions to proceed.');
+            return false;
+        }
         return true;
     };
 
@@ -146,16 +154,49 @@ const RegisterScreen = ({ navigation }: any) => {
 
         setLoading(true);
         try {
+            let paymentId = '';
+
+            // Handle Payment if fee > 0
+            if (registrationFee > 0) {
+                if (!razorpayKey) {
+                    Alert.alert('Configuration Error', 'Unable to initiate payment. Please try again later.');
+                    setLoading(false);
+                    return;
+                }
+
+                try {
+                    const options = {
+                        description: 'Worker Registration Fee',
+                        currency: 'INR',
+                        key: razorpayKey,
+                        amount: registrationFee * 100, // Amount in paise
+                        name: 'RanX24',
+                        prefill: {
+                            email: formData.email,
+                            contact: formData.mobileNumber,
+                            name: `${formData.firstName} ${formData.lastName}`
+                        },
+                        theme: { color: colors.primary }
+                    };
+
+                    const paymentData = await RazorpayCheckout.open(options);
+                    paymentId = paymentData.razorpay_payment_id;
+                } catch (payError: any) {
+                    console.log('Payment Error:', payError);
+                    Alert.alert('Payment Failed', 'Registration fee payment is required to continue.');
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const uploadData = new FormData();
 
             // Append text fields
-            // Append fields
             Object.keys(formData).forEach(key => {
                 const value = (formData as any)[key];
                 if (key === 'confirmPassword') return;
 
                 if (Array.isArray(value)) {
-                    // Append each item for array fields
                     value.forEach((item) => {
                         uploadData.append(key, item);
                     });
@@ -164,23 +205,16 @@ const RegisterScreen = ({ navigation }: any) => {
                 }
             });
 
-            console.log('Images state:', images);
-
-            // Append images with proper React Native format
             if (images.livePhoto) {
-                console.log('Appending livePhoto:', images.livePhoto);
                 const livePhotoFile = {
                     uri: images.livePhoto,
                     type: 'image/jpeg',
                     name: 'live-photo.jpg',
                 };
                 uploadData.append('livePhoto', livePhotoFile as any);
-            } else {
-                console.log('WARNING: No livePhoto in images state!');
             }
 
             if (images.aadhaarFront) {
-                console.log('Appending aadhaarFront:', images.aadhaarFront);
                 const aadhaarFrontFile = {
                     uri: images.aadhaarFront,
                     type: 'image/jpeg',
@@ -190,7 +224,6 @@ const RegisterScreen = ({ navigation }: any) => {
             }
 
             if (images.aadhaarBack) {
-                console.log('Appending aadhaarBack:', images.aadhaarBack);
                 const aadhaarBackFile = {
                     uri: images.aadhaarBack,
                     type: 'image/jpeg',
@@ -200,7 +233,6 @@ const RegisterScreen = ({ navigation }: any) => {
             }
 
             if (images.panCard) {
-                console.log('Appending panCard:', images.panCard);
                 const panFile = {
                     uri: images.panCard,
                     type: 'image/jpeg',
@@ -209,16 +241,16 @@ const RegisterScreen = ({ navigation }: any) => {
                 uploadData.append('panCard', panFile as any);
             }
 
-            console.log('Submitting registration...');
+            // Append payment details
+            uploadData.append('registrationFee', registrationFee.toString());
+            if (paymentId) {
+                uploadData.append('paymentId', paymentId);
+            }
 
-            // Use fetch instead of axios for better file upload support in React Native
-            const token = ''; // No token needed for registration
-            console.log('Registration URL:', `${API_URL}/workers/register`);
             const response = await fetch(`${API_URL}/workers/register`, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
-                    // Don't set Content-Type - let the browser/RN set it with boundary
                 },
                 body: uploadData,
             });
@@ -236,7 +268,6 @@ const RegisterScreen = ({ navigation }: any) => {
             );
         } catch (error: any) {
             console.error('Registration Error:', error);
-            console.error('Error message:', error.message);
             const errorMessage = error.message || 'Registration failed. Please check your internet connection.';
             Alert.alert('Registration Failed', errorMessage);
         } finally {
@@ -337,7 +368,6 @@ const RegisterScreen = ({ navigation }: any) => {
     const [categories, setCategories] = useState<any[]>([]);
     const [fetchingCategories, setFetchingCategories] = useState(false);
 
-    // Fetch categories on mount
     React.useEffect(() => {
         fetchCategories();
     }, []);
@@ -355,15 +385,30 @@ const RegisterScreen = ({ navigation }: any) => {
         }
     };
 
+    const fetchRegistrationConfig = async () => {
+        try {
+            // Fetch registration fee
+            const feeRes = await api.get('/fees/registration-fee');
+            setRegistrationFee(feeRes.data.registrationFee);
+
+            // Fetch Razorpay key if fee > 0
+            if (feeRes.data.registrationFee > 0) {
+                const configRes = await api.get('/payment/config');
+                setRazorpayKey(configRes.data.razorpayKeyId);
+            }
+        } catch (error) {
+            console.error('Error fetching registration config:', error);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchRegistrationConfig();
+    }, []);
+
     const toggleCategory = (catName: string) => {
         const currentCats = formData.categories || [];
         if (currentCats.includes(catName)) {
             updateField('categories', currentCats.filter((c: string) => c !== catName));
-            // Also remove services belonging to this category? 
-            // For simplicity, we keep them or filter them out. 
-            // Ideally we should filter out services that no longer have their parent category selected.
-            // But since we store service names as strings, matching them back to category is tricky without lookup.
-            // For now, let's keep it simple.
         } else {
             updateField('categories', [...currentCats, catName]);
         }
@@ -407,7 +452,6 @@ const RegisterScreen = ({ navigation }: any) => {
                 </View>
             </View>
 
-            {/* Services Selection */}
             {formData.categories && formData.categories.length > 0 && (
                 <View style={[styles.inputGroup, { marginTop: spacing.m }]}>
                     <Text style={styles.label}>Select Services *</Text>
@@ -420,7 +464,6 @@ const RegisterScreen = ({ navigation }: any) => {
                                 <Text style={styles.subCategoryTitle}>{catName}</Text>
                                 <View style={styles.categoriesGrid}>
                                     {category.subCategories.map((subCat: any) => {
-                                        // Handle both object and string formats if necessary, though model suggests strings or objects
                                         const serviceName = typeof subCat === 'string' ? subCat : subCat.name;
                                         const isSelected = formData.services?.includes(serviceName);
                                         return (
@@ -550,6 +593,22 @@ const RegisterScreen = ({ navigation }: any) => {
                     </>
                 )}
             </TouchableOpacity>
+
+            <TouchableOpacity 
+                style={styles.checkboxContainer} 
+                onPress={() => setIsAgreed(!isAgreed)}
+                activeOpacity={0.7}
+            >
+                <View style={[styles.checkbox, isAgreed && styles.checkboxChecked]}>
+                    {isAgreed && <Ionicons name="checkmark" size={14} color="white" />}
+                </View>
+                <View style={styles.checkboxLabelContainer}>
+                    <Text style={styles.checkboxLabel}>I agree to the </Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Terms')}>
+                        <Text style={styles.linkText}>Terms & Conditions</Text>
+                    </TouchableOpacity>
+                </View>
+            </TouchableOpacity>
         </View>
     );
 
@@ -578,7 +637,11 @@ const RegisterScreen = ({ navigation }: any) => {
                                 <Ionicons name="arrow-forward" size={20} color={colors.surface} style={{ marginLeft: 8 }} />
                             </TouchableOpacity>
                         ) : (
-                            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+                            <TouchableOpacity 
+                                style={[styles.button, (!isAgreed && step === 3) && styles.buttonDisabled]} 
+                                onPress={handleRegister} 
+                                disabled={loading || (!isAgreed && step === 3)}
+                            >
                                 {loading ? (
                                     <ActivityIndicator color={colors.surface} />
                                 ) : (
@@ -782,7 +845,7 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     serviceChipActive: {
-        backgroundColor: colors.secondary, // Or a distinct color from category
+        backgroundColor: colors.secondary,
         borderColor: colors.secondary,
     },
     serviceText: {
@@ -792,6 +855,64 @@ const styles = StyleSheet.create({
     },
     serviceTextActive: {
         color: 'white',
+    },
+    checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: spacing.m,
+        marginBottom: spacing.l,
+    },
+    checkbox: {
+        width: 20,
+        height: 20,
+        borderRadius: 4,
+        borderWidth: 2,
+        borderColor: colors.primary,
+        marginRight: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    checkboxChecked: {
+        backgroundColor: colors.primary,
+    },
+    checkboxLabelContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+    },
+    feeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.primary + '10',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: colors.primary + '30',
+        gap: 8,
+    },
+    feeText: {
+        fontSize: 14,
+        color: colors.text.primary,
+        flex: 1,
+    },
+    feeAmount: {
+        fontWeight: 'bold',
+        color: colors.primary,
+    },
+    checkboxLabel: {
+        fontSize: 14,
+        color: colors.text.secondary,
+    },
+    linkText: {
+        fontSize: 14,
+        color: colors.primary,
+        fontWeight: 'bold',
+        textDecorationLine: 'underline',
+    },
+    buttonDisabled: {
+        backgroundColor: colors.border,
+        opacity: 0.7,
     },
 });
 

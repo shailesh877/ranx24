@@ -26,6 +26,7 @@ import { useTheme } from '../../context/ThemeContext';
 import ReviewModal from '../../components/ReviewModal';
 import ReviewCard from '../../components/ReviewCard';
 import StarRating from '../../components/StarRating';
+import { generateInvoice } from '../../utils/InvoiceGenerator';
 
 const BookingDetailScreen = ({ navigation, route }: any) => {
     const { colors, isDark } = useTheme();
@@ -331,6 +332,13 @@ const BookingDetailScreen = ({ navigation, route }: any) => {
                             <Text style={[styles.billValue, { color: colors.text }]}>+₹{booking.platformFee}</Text>
                         </View>
                     )}
+                    
+                    {booking.gstAmount > 0 && (
+                        <View style={styles.billRow}>
+                            <Text style={[styles.billLabel, { color: colors.textSecondary }]}>GST (18%)</Text>
+                            <Text style={[styles.billValue, { color: colors.text }]}>+₹{booking.gstAmount}</Text>
+                        </View>
+                    )}
 
                     {booking.couponDiscount > 0 && (
                         <View style={styles.billRow}>
@@ -440,6 +448,19 @@ const BookingDetailScreen = ({ navigation, route }: any) => {
                             ) : (
                                 <Text style={styles.primaryBtnText}>Pay Now (Razorpay)</Text>
                             )}
+                        </TouchableOpacity>
+                    )}
+
+                    {booking.status === 'completed' && (
+                        <TouchableOpacity
+                            style={[styles.secondaryBtn, { borderColor: colors.primary, backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : '#F0F7FF' }]}
+                            onPress={() => generateInvoice(booking)}
+                            disabled={actionLoading}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Ionicons name="download-outline" size={20} color={colors.primary} />
+                                <Text style={[styles.secondaryBtnText, { color: colors.primary }]}>Download Invoice</Text>
+                            </View>
                         </TouchableOpacity>
                     )}
 

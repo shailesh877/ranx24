@@ -173,6 +173,14 @@ const workerSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  registrationFee: {
+    type: Number,
+    default: 0
+  },
+  paymentId: {
+    type: String,
+    default: ''
+  },
 }, {
   timestamps: true,
   toJSON: { virtuals: true }, // Ensure virtuals are included when converting to JSON
@@ -180,8 +188,23 @@ const workerSchema = new mongoose.Schema({
 });
 
 workerSchema.pre('save', async function (next) {
+  // Synchronize services and categories arrays from servicePricing for backward compatibility and display
+  if (this.isModified('servicePricing')) {
+    const serviceNames = this.servicePricing
+      .filter(sp => sp.isActive)
+      .map(sp => sp.serviceName);
+    
+    const categoryNames = [...new Set(this.servicePricing
+      .filter(sp => sp.isActive)
+      .map(sp => sp.categoryName)
+      .filter(Boolean))];
+
+    this.services = serviceNames;
+    this.categories = categoryNames;
+  }
+
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);

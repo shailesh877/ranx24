@@ -32,7 +32,7 @@ export const CartProvider = ({ children }) => {
     fetchCart();
   }, []);
 
-  const addToCart = async (arg1, category, service, description, price, quantity = 1, bookingType = 'full-day', days = 1, startDate = null, endDate = null) => {
+  const addToCart = async (arg1, category, service, description, price, quantity = 1, bookingType = 'full-day', days = 1, startDate = null, endDate = null, serviceId = null) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -44,15 +44,17 @@ export const CartProvider = ({ children }) => {
       if (typeof arg1 === 'object' && arg1 !== null) {
         // Called with object
         payload = { ...arg1 };
-        // Map fields if necessary, e.g. serviceName -> service
+        // Map fields if necessary
         if (payload.serviceName) payload.service = payload.serviceName;
         if (!payload.quantity) payload.quantity = 1;
+        // serviceId will be in payload already if passed in object
       } else {
         // Called with individual args
         payload = {
           workerId: arg1,
           category,
           service,
+          serviceId,
           description,
           price,
           quantity,

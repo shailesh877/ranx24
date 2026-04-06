@@ -183,6 +183,8 @@ export const registerWorker = async (req, res) => {
     services,
     price,
     password,
+    registrationFee,
+    paymentId,
   } = req.body;
 
   let { servicePricing } = req.body;
@@ -279,6 +281,8 @@ export const registerWorker = async (req, res) => {
       servicePricing: validatedServicePricing.length > 0 ? validatedServicePricing : [],
       price: price || 0, // Fallback to old system
       password, // Added password
+      registrationFee: registrationFee || 0,
+      paymentId: paymentId || '',
     };
 
     // Only add location if both coordinates are valid numbers
@@ -761,7 +765,8 @@ export const updateWorkerDetails = async (req, res) => {
 // @access  Public
 export const getWorkerById = async (req, res) => {
   try {
-    const worker = await Worker.findById(req.params.id);
+    const worker = await Worker.findById(req.params.id)
+      .select('-password -tokens -__v -bankDetails -upiId -aadhaarNumber -panNumber');
     if (worker) {
       res.json(worker);
     } else {

@@ -132,7 +132,7 @@ const WorkerEditModal = ({ worker, onClose, onRefresh }) => {
                     lastName: formData.lastName,
                     mobileNumber: formData.mobileNumber,
                     status: formData.status,
-                    workerType: formData.workerType,
+                    workerType: formData.workerType || 'standard',
                     state: formData.state,
                     district: formData.district,
                     city: formData.city,
@@ -144,6 +144,7 @@ const WorkerEditModal = ({ worker, onClose, onRefresh }) => {
                 },
                 config
             );
+            console.log('Basic details updated');
 
             // 2. Sync services – naive approach: clear all then re‑add
             // First, remove any services not present in new list
@@ -212,8 +213,9 @@ const WorkerEditModal = ({ worker, onClose, onRefresh }) => {
             onClose();
             onRefresh();
         } catch (err) {
-            console.error(err);
-            toast.error('Failed to update worker');
+            console.error('Update error details:', err.response?.data || err.message);
+            const errorMsg = err.response?.data?.message || 'Failed to update worker details';
+            toast.error(errorMsg);
         }
     };
 

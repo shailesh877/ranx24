@@ -49,6 +49,7 @@ export default function SubCategoryPage() {
             workerId: null,
             workerName: "Pending Assignment",
             serviceName: service.name,
+            serviceId: service._id,
             category: service.category?.name || subCategoryName,
             date: "Pending",
             time: "Pending",

@@ -13,8 +13,10 @@ import {
   LucideChevronRight,
   LucideCheckCircle,
   LucideAlertCircle,
-  LucideLoader
+  LucideLoader,
+  LucideDownload
 } from 'lucide-react';
+import { generateInvoice } from '../utils/InvoiceGenerator';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'https://backend.ranx24.com';
 
@@ -240,7 +242,7 @@ export default function MyBookingsPage() {
           <div className="grid grid-cols-1 gap-6">
             {filteredBookings.map((booking) => {
               const status = getStatusInfo(booking.status);
-              const totalAmount = booking.finalPrice || (booking.price + (booking.platformFee || 0) + (booking.percentageFee || 0) - (booking.couponDiscount || 0) - (booking.membershipDiscount || 0));
+              const totalAmount = booking.finalPrice || (booking.price + (booking.platformFee || 0) + (booking.percentageFee || 0) + (booking.gstAmount || 0) - (booking.couponDiscount || 0) - (booking.membershipDiscount || 0));
               const amountPaid = Math.max(booking.amountPaid || 0, booking.advanceAmount || 0);
               const balance = totalAmount - amountPaid;
               
@@ -305,6 +307,12 @@ export default function MyBookingsPage() {
                               <span>₹{(booking.platformFee || 0) + (booking.percentageFee || 0)}</span>
                             </div>
                           )}
+                          {booking.gstAmount > 0 && (
+                            <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
+                              <span>GST (18%)</span>
+                              <span>₹{booking.gstAmount}</span>
+                            </div>
+                          )}
                           {(booking.couponDiscount > 0 || booking.membershipDiscount > 0) && (
                             <div className="flex justify-between text-[10px] font-bold text-green-500 uppercase">
                               <span>Discounts</span>
@@ -325,7 +333,7 @@ export default function MyBookingsPage() {
                                 Advance Paid (15%)
                               </span>
                               <span className={`text-sm font-black ${booking.paymentStatus === 'paid' ? 'text-emerald-700' : 'text-amber-800'}`}>
-                                ₹{booking.advanceAmount || Math.round(totalAmount * 0.15)}
+                                ₹{amountPaid > 0 ? amountPaid : (booking.advanceAmount || Math.round(totalAmount * 0.15))}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
@@ -333,7 +341,7 @@ export default function MyBookingsPage() {
                                 {booking.paymentStatus === 'paid' ? 'Balance Paid (85%)' : 'Remaining Balance (85%)'}
                               </span>
                               <span className={`text-sm font-black ${booking.paymentStatus === 'paid' ? 'text-emerald-700' : 'text-amber-900 font-black'}`}>
-                                ₹{totalAmount - (booking.advanceAmount || Math.round(totalAmount * 0.15))}
+                                ₹{totalAmount - (amountPaid > 0 ? amountPaid : (booking.advanceAmount || Math.round(totalAmount * 0.15)))}
                               </span>
                             </div>
                             {booking.paymentStatus === 'paid' && (
@@ -378,13 +386,22 @@ export default function MyBookingsPage() {
                       )}
 
                       {booking.status === 'completed' && (
-                        <button 
-                          onClick={() => handleOpenReviewModal(booking)}
-                          className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-amber-50 text-amber-600 px-6 py-3 rounded-xl font-bold hover:bg-amber-100 transition-all border border-amber-100"
-                        >
-                          <LucideStar size={18} />
-                          Rate Experience
-                        </button>
+                        <>
+                          <button 
+                            onClick={() => handleOpenReviewModal(booking)}
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-amber-50 text-amber-600 px-6 py-3 rounded-xl font-bold hover:bg-amber-100 transition-all border border-amber-100"
+                          >
+                            <LucideStar size={18} />
+                            Rate Experience
+                          </button>
+                          <button 
+                            onClick={() => generateInvoice(booking)}
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-blue-50 text-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-100 transition-all border border-blue-100"
+                          >
+                            <LucideDownload size={18} />
+                            Download Invoice
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>

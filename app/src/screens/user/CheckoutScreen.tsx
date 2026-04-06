@@ -295,8 +295,12 @@ const CheckoutScreen = ({ navigation, route }: any) => {
     const coinsToUse = useCoins ? Math.min(ycCoins, maxCoinsAllowed) : 0;
     const coinDiscount = coinsToUse * coinRate;
 
-    // Wallet Calculation
-    const totalToPay = Math.max(0, priceAfterCoupon - coinDiscount + platformFee + percentageFee);
+    // GST Calculation
+    const subtotalAfterDiscounts = priceAfterCoupon - coinDiscount + platformFee + percentageFee;
+    const gstAmount = Math.round(Math.max(0, subtotalAfterDiscounts) * 0.18);
+
+    // Total Calculation
+    const totalToPay = subtotalAfterDiscounts + gstAmount;
     const advanceRequired = Math.ceil(totalToPay * 0.15);
     const remainingBalance = totalToPay - advanceRequired;
 
@@ -352,6 +356,7 @@ const CheckoutScreen = ({ navigation, route }: any) => {
             paymentId: undefined,
             platformFee,
             percentageFee,
+            gstAmount,
             isAdvancePayment: true,
             advanceAmount: walletAmountToUse + (finalPayable === 0 ? 0 : 0) // Will be updated after payment
         };
@@ -671,6 +676,10 @@ const CheckoutScreen = ({ navigation, route }: any) => {
                             <Text style={[styles.billValue, { color: colors.text }]}>₹{percentageFee}</Text>
                         </View>
                     )}
+                    <View style={styles.billRow}>
+                        <Text style={[styles.billLabel, { color: colors.textSecondary }]}>GST (18%)</Text>
+                        <Text style={[styles.billValue, { color: colors.text }]}>₹{gstAmount}</Text>
+                    </View>
                     {membershipDiscount > 0 && (
                         <View style={styles.billRow}>
                             <Text style={[styles.billLabel, { color: '#F59E0B' }]}>Membership Discount ({activeMembership?.plan_id?.name})</Text>

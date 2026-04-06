@@ -90,6 +90,7 @@ export default function BookingPage() {
       workerId: null,
       workerName: "Pending Assignment",
       serviceName: serviceDetails?.name || serviceNameParam,
+      serviceId: serviceDetails?._id || serviceId,
       category: serviceDetails?.category?.name || categoryNameParam,
       date: date.toISOString().split('T')[0],
       time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),

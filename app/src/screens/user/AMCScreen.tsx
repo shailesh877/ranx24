@@ -30,6 +30,7 @@ const AMCScreen = ({ navigation }: any) => {
     const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [purchasing, setPurchasing] = useState(false);
+    const [isEmiSelected, setIsEmiSelected] = useState(false);
 
     useEffect(() => {
         fetchPlans();
@@ -59,10 +60,20 @@ const AMCScreen = ({ navigation }: any) => {
         );
     };
 
-    const totalPrice = selectedPlans.reduce((sum, id) => {
-        const plan: any = plans.find((p: any) => p._id === id);
-        return sum + (plan ? parseFloat(plan.total_price) : 0);
-    }, 0);
+    const selectedPlansData = selectedPlans.map(id => plans.find((p: any) => p._id === id)).filter(Boolean);
+    const canUseEmi = selectedPlansData.length > 0 && selectedPlansData.every((p: any) => p.is_emi_available);
+
+    // Calculate Totals
+    const totalPrice = selectedPlansData.reduce((sum, p: any) => sum + parseFloat(p.total_price), 0);
+    const totalInterest = selectedPlansData.reduce((sum, p: any) => sum + parseFloat(p.emi_interest_amount || 0), 0);
+    const totalWithInterest = totalPrice + totalInterest;
+
+    // Use EMI config of first plan
+    const numInstallments = (selectedPlansData[0] as any)?.emi_installments || 1;
+    const emiType = (selectedPlansData[0] as any)?.available_emi_frequencies?.[0] || 'Monthly';
+    const amountPerInstallment = numInstallments > 0 ? (totalWithInterest / numInstallments) : totalWithInterest;
+
+    const finalAmountToChargeToday = isEmiSelected && canUseEmi ? amountPerInstallment : totalPrice;
 
     const handlePurchase = async () => {
         if (!isAuthenticated) {
@@ -92,7 +103,7 @@ const AMCScreen = ({ navigation }: any) => {
 
             // 2. Create Order on Backend
             const orderResponse = await api.post('/payment/order', {
-                amount: totalPrice
+                amount: Math.round(finalAmountToChargeToday)
             });
 
             const orderData = orderResponse.data;
@@ -122,7 +133,8 @@ const AMCScreen = ({ navigation }: any) => {
                 razorpay_payment_id: data.razorpay_payment_id,
                 razorpay_signature: data.razorpay_signature,
                 isAMCPurchase: true,
-                planIds: selectedPlans
+                planIds: selectedPlans,
+                paymentMode: (isEmiSelected && canUseEmi) ? 'EMI' : 'Full'
             });
 
             if (verifyResponse.data.success) {
@@ -179,6 +191,13 @@ const AMCScreen = ({ navigation }: any) => {
                             <Text style={[styles.planDescription, { color: colors.textSecondary }]} numberOfLines={2}>
                                 {item.description}
                             </Text>
+                        )}
+
+                        {item.is_emi_available && (
+                            <View style={[styles.emiBadge, { backgroundColor: colors.primary + '15' }]}>
+                                <Ionicons name="card" size={14} color={colors.primary} />
+                                <Text style={[styles.emiBadgeText, { color: colors.primary }]}>EMI Available</Text>
+                            </View>
                         )}
                         
                         <View style={styles.detailsRow}>
@@ -240,8 +259,25 @@ const AMCScreen = ({ navigation }: any) => {
             {selectedPlans.length > 0 && (
                 <View style={[styles.bottomBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
                     <View style={styles.summaryInfo}>
+                        {canUseEmi && (
+                            <TouchableOpacity 
+                                style={[styles.emiToggle, { backgroundColor: isEmiSelected ? colors.primary + '10' : 'transparent', borderColor: isEmiSelected ? colors.primary : colors.border }]}
+                                onPress={() => setIsEmiSelected(!isEmiSelected)}
+                            >
+                                <Ionicons name={isEmiSelected ? "checkbox" : "square-outline"} size={20} color={isEmiSelected ? colors.primary : colors.textSecondary} />
+                                <Text style={[styles.emiToggleText, { color: colors.text }]}>Pay via EMI</Text>
+                            </TouchableOpacity>
+                        )}
+                        
                         <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{selectedPlans.length} plans selected</Text>
-                        <Text style={[styles.summaryPrice, { color: colors.text }]}>Total: ₹{totalPrice}</Text>
+                        <Text style={[styles.summaryPrice, { color: colors.text }]}>
+                            {isEmiSelected && canUseEmi ? `Pay Today: ₹${Math.round(finalAmountToChargeToday)}` : `Total: ₹${totalPrice}`}
+                        </Text>
+                        {isEmiSelected && canUseEmi && (
+                            <Text style={{ fontSize: 10, color: colors.textSecondary }}>
+                                {numInstallments} {emiType} payments (Incl. ₹{totalInterest} interest)
+                            </Text>
+                        )}
                     </View>
                     <TouchableOpacity 
                         style={[styles.purchaseBtn, { backgroundColor: colors.primary }]}
@@ -403,6 +439,35 @@ const styles = StyleSheet.create({
     purchaseBtnText: {
         color: '#FFFFFF',
         fontSize: 16,
+        fontWeight: 'bold',
+    },
+    emiBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+        marginBottom: 8,
+        gap: 4,
+    },
+    emiBadgeText: {
+        fontSize: 11,
+        fontWeight: 'bold',
+    },
+    emiToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 10,
+        borderWidth: 1,
+        alignSelf: 'flex-start',
+        marginBottom: 8,
+        gap: 6,
+    },
+    emiToggleText: {
+        fontSize: 12,
         fontWeight: 'bold',
     },
 });

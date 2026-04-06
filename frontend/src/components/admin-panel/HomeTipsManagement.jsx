@@ -5,7 +5,7 @@ const HomeTipsManagement = () => {
     const { homeTips, addHomeTip, updateHomeTip, deleteHomeTip } = useAdmin();
 
     // Form State
-    const [form, setForm] = useState({ title: "", content: "", active: true });
+    const [form, setForm] = useState({ title: "", content: "", link: "", active: true });
     const [editingTip, setEditingTip] = useState(null);
     const [image, setImage] = useState(null);
 
@@ -16,6 +16,7 @@ const HomeTipsManagement = () => {
         const formData = new FormData();
         formData.append('title', form.title);
         formData.append('content', form.content);
+        formData.append('link', form.link);
         formData.append('active', form.active);
         if (image) formData.append('image', image);
 
@@ -27,7 +28,7 @@ const HomeTipsManagement = () => {
         }
 
         if (success) {
-            setForm({ title: "", content: "", active: true });
+            setForm({ title: "", content: "", link: "", active: true });
             setEditingTip(null);
             setImage(null);
         }
@@ -35,13 +36,13 @@ const HomeTipsManagement = () => {
 
     const handleEdit = (tip) => {
         setEditingTip(tip);
-        setForm({ title: tip.title, content: tip.content, active: tip.active });
+        setForm({ title: tip.title, content: tip.content, link: tip.link || "", active: tip.active });
         setImage(null);
     };
 
     const handleCancel = () => {
         setEditingTip(null);
-        setForm({ title: "", content: "", active: true });
+        setForm({ title: "", content: "", link: "", active: true });
         setImage(null);
     };
 
@@ -58,6 +59,11 @@ const HomeTipsManagement = () => {
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                         <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-200" required />
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Upload Link / URL</label>
+                        <input type="url" placeholder="https://..." value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-200" />
                     </div>
 
                     <div className="mb-4">
@@ -111,6 +117,11 @@ const HomeTipsManagement = () => {
                                         </span>
                                     </div>
                                     <p className="text-gray-600 text-sm mt-1 line-clamp-2">{tip.content}</p>
+                                    {tip.link && (
+                                        <a href={tip.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 text-xs mt-1 block font-medium truncate max-w-sm">
+                                            <i className="fa-solid fa-link mr-1"></i> {tip.link}
+                                        </a>
+                                    )}
                                     <p className="text-gray-400 text-xs mt-2">{new Date(tip.createdAt).toLocaleDateString()}</p>
                                 </div>
 

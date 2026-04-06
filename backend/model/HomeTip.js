@@ -10,6 +10,10 @@ const homeTipSchema = new mongoose.Schema({
         type: String,
         required: [true, 'A home tip must have content']
     },
+    link: {
+        type: String,
+        default: ''
+    },
     image: {
         type: String,
         default: 'default-tip.jpg'

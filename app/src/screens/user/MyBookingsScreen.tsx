@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { SHADOWS, SPACING, SIZES } from '../../constants/theme';
+import { generateInvoice } from '../../utils/InvoiceGenerator';
 
 const MyBookingsScreen = ({ navigation }) => {
     const { colors, isDark } = useTheme();
@@ -118,8 +119,19 @@ const MyBookingsScreen = ({ navigation }) => {
             <View style={[styles.cardFooter, { backgroundColor: isDark ? '#374151' : '#F9FAFB', borderTopColor: colors.border }]}>
                 <Text style={[styles.bookingId, { color: colors.textSecondary }]}>ID: #{item._id.slice(-8).toUpperCase()}</Text>
                 <View style={styles.viewDetails}>
-                    <Text style={[styles.viewDetailsText, { color: colors.primary }]}>View Details</Text>
-                    <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+                    {item.status === 'completed' && (
+                        <TouchableOpacity 
+                            onPress={() => generateInvoice(item)}
+                            style={{ marginRight: 16, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                        >
+                            <Ionicons name="download-outline" size={14} color={colors.primary} />
+                            <Text style={[styles.viewDetailsText, { color: colors.primary }]}>Invoice</Text>
+                        </TouchableOpacity>
+                    )}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={[styles.viewDetailsText, { color: colors.primary }]}>View Details</Text>
+                        <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+                    </View>
                 </View>
             </View>
         </TouchableOpacity>

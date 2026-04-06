@@ -94,6 +94,7 @@ const PayoutHistory = lazy(() => import("./components/admin-panel/PayoutHistory"
 import HomeTipsManagement from "./components/admin-panel/HomeTipsManagement";
 import TestimonialsManagement from "./components/admin-panel/TestimonialsManagement";
 const AdminChangePassword = lazy(() => import("./pages/AdminChangePassword"));
+const VerifyWorker = lazy(() => import("./pages/VerifyWorker"));
 
 import UserLayout from "./components/UserLayout";
 
@@ -149,6 +150,7 @@ export default function App() {
               <Route path="/home-tips/:id" element={<HomeTipDetail />} />
               <Route path="/membership-plan" element={<MembershipPlanPage />} />
               <Route path="/amc-plan" element={<AMCPlanPage />} />
+              <Route path="/verify-worker/:id" element={<VerifyWorker />} />
             </Route>
 
             {/* ADMIN ROUTES */}

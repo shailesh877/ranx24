@@ -14,6 +14,11 @@ const CartItemSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  serviceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Service",
+    required: false,
+  },
   description: {
     type: String,
   },

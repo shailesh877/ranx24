@@ -92,19 +92,41 @@ export const getUserProfile = async (req, res) => {
 
     const amcs = await Promise.all(amcsRaw.map(async (a) => {
         let plan = null;
+        let plans_data = [];
         if (a.plans && a.plans.length > 0) {
-            plan = await db.collection('amc_plans').findOne({
+            // Map plans to ObjectIds or keep strings properly
+            const queryIds = a.plans.map(id => (typeof id === 'string' && id.length === 24) ? new mongoose.Types.ObjectId(id) : id);
+            
+            plans_data = await db.collection('amc_plans').find({
                 $or: [
-                    { _id: a.plans[0] },
-                    { _id: a.plans[0].toString() },
-                    { _id: (typeof a.plans[0] === 'string' && a.plans[0].length === 24) ? new mongoose.Types.ObjectId(a.plans[0]) : a.plans[0] }
+                    { _id: { $in: queryIds } },
+                    { _id: { $in: a.plans } }
                 ]
-            });
+            }).toArray();
+            
+            if (plans_data.length > 0) {
+                plan = plans_data[0];
+            }
         }
+        
+        let installments = [];
+        if (a.payment_mode === 'EMI') {
+            installments = await db.collection('amc_installments').find({
+                user_amc_id: a._id
+            }).sort({ installment_number: 1 }).toArray();
+        }
+
+        const totalVisits = (a.total_visits !== undefined) ? a.total_visits : (plans_data || []).reduce((sum, p) => sum + (parseInt(p.number_of_visits) || 0), 0);
+        const remainingVisits = (a.remaining_visits !== undefined) ? a.remaining_visits : totalVisits;
+
         return {
             ...a,
             planName: plan?.name || 'Active AMC',
-            expiry: a.end_date
+            plans_data: plans_data,
+            installments: installments,
+            expiry: a.end_date,
+            total_visits: totalVisits,
+            remaining_visits: remainingVisits
         };
     }));
 
@@ -158,5 +180,3 @@ export const updateUserProfile = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
-
-// You can add more controller functions for creating, updating, deleting users as needed.

@@ -2,7 +2,7 @@
   "expo": {
     "name": "RanX24 Service Partner",
     "slug": "ranx24-service-partner",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/logo.jpg",
     "userInterfaceStyle": "light",
@@ -24,6 +24,7 @@
         "backgroundColor": "#1E40AF"
       },
       "package": "com.RanX24.Worker",
+      "versionCode": 2,
       "jsEngine": "hermes",
       "googleServicesFile": "./google-services.json",
       "permissions": [

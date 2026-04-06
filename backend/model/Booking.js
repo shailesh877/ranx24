@@ -71,6 +71,10 @@ const BookingSchema = mongoose.Schema(
       type: Number,
       default: 0
     },
+    gstAmount: {
+      type: Number,
+      default: 0
+    },
     travelCharge: {
       type: Number,
       default: 0
