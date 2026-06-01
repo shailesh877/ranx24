@@ -44,7 +44,7 @@ export const getAllUsers = async (req, res) => {
 
       if (amc && amc.plans && amc.plans.length > 0) {
         const amcPlan = await AMCPlan.findById(amc.plans[0]).lean();
-        amc.planName = amcPlan?.name || 'Active AMC';
+        amc.planName = amcPlan?.name || 'Active Package';
         amc.contractNumber = amc.contract_number;
         amc.expiry = amc.end_date;
       }

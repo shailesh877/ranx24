@@ -41,11 +41,11 @@ const AMCScreen = ({ navigation }: any) => {
             const response = await api.get('/amc-plans');
             setPlans(response.data);
         } catch (error) {
-            console.error('Error fetching AMC plans:', error);
+            console.error('Error fetching plans:', error);
             Toast.show({
                 type: 'error',
                 text1: 'Error',
-                text2: 'Failed to load AMC plans'
+                text2: 'Failed to load packages'
             });
         } finally {
             setLoading(false);
@@ -80,7 +80,7 @@ const AMCScreen = ({ navigation }: any) => {
             Toast.show({
                 type: 'error',
                 text1: 'Authentication',
-                text2: 'Please login to purchase an AMC package'
+                text2: 'Please login to purchase a Marriage & Event package'
             });
             navigation.navigate('Login');
             return;
@@ -90,7 +90,7 @@ const AMCScreen = ({ navigation }: any) => {
             Toast.show({
                 type: 'error',
                 text1: 'Selection',
-                text2: 'Please select at least one plan'
+                text2: 'Please select at least one package'
             });
             return;
         }
@@ -110,7 +110,7 @@ const AMCScreen = ({ navigation }: any) => {
 
             // 3. Open Razorpay Checkout
             const options = {
-                description: `AMC Package Purchase (${selectedPlans.length} plans)`,
+                description: `Marriage & Event Package Purchase (${selectedPlans.length} packages)`,
                 image: 'https://ranx24.com/logo.png',
                 currency: orderData.currency,
                 key: razorpayKey,
@@ -141,7 +141,7 @@ const AMCScreen = ({ navigation }: any) => {
                 Toast.show({
                     type: 'success',
                     text1: 'Success',
-                    text2: 'AMC Package activated successfully!'
+                    text2: 'Marriage & Event Package activated successfully!'
                 });
                 navigation.navigate('Main', { screen: 'Profile' });
             } else {
@@ -230,14 +230,14 @@ const AMCScreen = ({ navigation }: any) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Annual Maintenance</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Marriage & Event</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <View style={styles.content}>
                 <View style={styles.introSection}>
                     <Text style={[styles.introTitle, { color: colors.text }]}>Custom Package</Text>
-                    <Text style={[styles.introSub, { color: colors.textSecondary }]}>Select one or more plans to build your custom annual contract.</Text>
+                    <Text style={[styles.introSub, { color: colors.textSecondary }]}>Select one or more services to build your custom marriage & event package.</Text>
                 </View>
 
                 {loading ? (
@@ -269,7 +269,7 @@ const AMCScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                         )}
                         
-                        <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{selectedPlans.length} plans selected</Text>
+                        <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{selectedPlans.length} packages selected</Text>
                         <Text style={[styles.summaryPrice, { color: colors.text }]}>
                             {isEmiSelected && canUseEmi ? `Pay Today: ₹${Math.round(finalAmountToChargeToday)}` : `Total: ₹${totalPrice}`}
                         </Text>

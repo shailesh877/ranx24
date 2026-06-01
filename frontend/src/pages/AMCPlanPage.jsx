@@ -24,7 +24,7 @@ export default function AMCPlanPage() {
                 setPlans(data);
             } catch (error) {
                 console.error('Error fetching AMC plans:', error);
-                toast.error('Failed to load AMC plans');
+                toast.error('Failed to load packages');
             } finally {
                 setLoading(false);
             }
@@ -57,13 +57,13 @@ export default function AMCPlanPage() {
 
     const handlePurchase = async () => {
         if (!isAuthenticated) {
-            toast.error('Please login to purchase an AMC package');
+            toast.error('Please login to purchase a Marriage & Event package');
             navigate('/login');
             return;
         }
 
         if (selectedPlans.length === 0) {
-            toast.error('Please select at least one plan to create a package');
+            toast.error('Please select at least one package to purchase');
             return;
         }
 
@@ -83,7 +83,7 @@ export default function AMCPlanPage() {
                 amount: orderData.amount,
                 currency: orderData.currency,
                 name: "RanX24",
-                description: `AMC Package Purchase (${selectedPlans.length} plans)`,
+                description: `Marriage & Event Package Purchase (${selectedPlans.length} packages)`,
                 order_id: orderData.id,
                 handler: async function (response) {
                     try {
@@ -101,7 +101,7 @@ export default function AMCPlanPage() {
                         );
 
                         if (verifyRes.data.success) {
-                            toast.success('AMC Package activated successfully!');
+                            toast.success('Marriage & Event Package activated successfully!');
                             setTimeout(() => navigate('/profile'), 2000);
                         } else {
                             toast.error('Payment verification failed');
@@ -144,10 +144,10 @@ export default function AMCPlanPage() {
             <div className="max-w-7xl mx-auto px-6 md:px-12">
                 <div className="text-center mb-16">
                     <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">
-                        Create Your <span className="text-indigo-600">AMC Package</span>
+                        Create Your <span className="text-indigo-600">Marriage & Event Package</span>
                     </h1>
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">
-                        Select multiple maintenance plans to create a custom annual contract tailored for your home.
+                        Select multiple services to create a custom package tailored for your marriage or event.
                     </p>
                 </div>
 
@@ -156,7 +156,7 @@ export default function AMCPlanPage() {
                     <div className="lg:col-span-2 space-y-6">
                         <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 mb-8">
                             <LucidePlus className="text-indigo-600" size={28} />
-                            Available AMC Plans
+                            Available Packages
                         </h2>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -319,22 +319,22 @@ export default function AMCPlanPage() {
                         <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                             <LucideShieldCheck size={32} />
                         </div>
-                        <h3 className="text-xl font-black text-gray-900 mb-3">Professional Maintenance</h3>
-                        <p className="text-gray-500 font-medium text-sm leading-relaxed">Certified technicians ensuring your home electronics work at peak efficiency.</p>
+                        <h3 className="text-xl font-black text-gray-900 mb-3">Professional Event Management</h3>
+                        <p className="text-gray-500 font-medium text-sm leading-relaxed">Certified managers and team ensuring your event goes on smoothly and perfectly.</p>
                     </div>
                     <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-lg group hover:border-indigo-200 transition-colors">
                         <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 mb-6 group-hover:bg-green-600 group-hover:text-white transition-all">
                             <LucideZap size={32} />
                         </div>
-                        <h3 className="text-xl font-black text-gray-900 mb-3">Priority Response</h3>
-                        <p className="text-gray-500 font-medium text-sm leading-relaxed">AMC holders get priority scheduling with a guaranteed 24-hour response time.</p>
+                        <h3 className="text-xl font-black text-gray-900 mb-3">Priority Coordination</h3>
+                        <p className="text-gray-500 font-medium text-sm leading-relaxed">Package holders get priority coordination with a guaranteed response time.</p>
                     </div>
                     <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-lg group hover:border-indigo-200 transition-colors">
                         <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-6 group-hover:bg-purple-600 group-hover:text-white transition-all">
                             <LucidePackage size={32} />
                         </div>
-                        <h3 className="text-xl font-black text-gray-900 mb-3">Custom Bundles</h3>
-                        <p className="text-gray-500 font-medium text-sm leading-relaxed">Choose exactly what you need. Combine AC, RO, and Electrical plans into one.</p>
+                        <h3 className="text-xl font-black text-gray-900 mb-3">Custom Packages</h3>
+                        <p className="text-gray-500 font-medium text-sm leading-relaxed">Choose exactly what you need. Combine decorations, catering, photography and other plans into one.</p>
                     </div>
                 </div>
             </div>

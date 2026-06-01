@@ -131,7 +131,7 @@ const UserManagement = () => {
               <th className="px-4 py-3 font-bold text-blue-700 text-left">Email</th>
                <th className="px-4 py-3 font-bold text-blue-700 text-left">Phone</th>
                <th className="px-4 py-3 font-bold text-blue-700 text-left">Membership</th>
-               <th className="px-4 py-3 font-bold text-blue-700 text-left">AMC</th>
+               <th className="px-4 py-3 font-bold text-blue-700 text-left">Marriage & Event</th>
                <th className="px-4 py-3 font-bold text-blue-700 text-left">Joined On</th>
               <th className="px-4 py-3 font-bold text-blue-700 text-center">Actions</th>
             </tr>
@@ -161,7 +161,7 @@ const UserManagement = () => {
                        <span className="text-gray-500">Exp: {user.amc.expiry}</span>
                      </div>
                    ) : (
-                     <span className="text-xs text-gray-400 italic">No AMC</span>
+                     <span className="text-xs text-gray-400 italic">No Package</span>
                    )}
                  </td>
                  <td className="px-4 py-3">{new Date(user.createdAt).toLocaleDateString()}</td>

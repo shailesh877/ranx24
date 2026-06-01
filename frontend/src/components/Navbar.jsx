@@ -80,10 +80,10 @@ export default function Navbar() {
             <div className="relative group">
               <button
                 className={`text-[15px] font-semibold tracking-wide flex items-center gap-1.5 transition-all duration-300 ${
-                  location.pathname.includes('-plan') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                  (location.pathname.includes('-plan') || location.pathname.includes('-package')) ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
                 }`}
               >
-                Our Plan
+                Plans & Packages
                 <LucideChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-300" />
               </button>
               
@@ -91,7 +91,7 @@ export default function Navbar() {
                 <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl py-3 border border-blue-50/50">
                   {[
                     { name: 'Membership Plan', path: '/membership-plan', desc: 'Unlock exclusive benefits & savings' },
-                    { name: 'Annual Maintenance Contract (AMC)', path: '/amc-plan', desc: 'Year-round care for your home' }
+                    { name: 'Marriage & Event Package', path: '/marriage-event-package', desc: 'Special package for marriage and events' }
                   ].map((plan) => (
                     <Link
                       key={plan.name}
@@ -269,14 +269,14 @@ export default function Navbar() {
               className="w-full text-lg font-bold text-gray-800 py-4 flex items-center justify-between group"
               onClick={() => setMobilePlansOpen(!mobilePlansOpen)}
             >
-              Our Plan
+              Plans & Packages
               <LucideChevronDown size={18} className={`text-gray-400 transition-transform duration-300 ${mobilePlansOpen ? 'rotate-180' : ''}`} />
             </button>
             {mobilePlansOpen && (
               <div className="bg-gray-50/50 rounded-2xl mb-4 overflow-hidden">
                 {[
                   { name: 'Membership Plan', path: '/membership-plan' },
-                  { name: 'AMC Plan', path: '/amc-plan' }
+                  { name: 'Marriage & Event Package', path: '/marriage-event-package' }
                 ].map((plan) => (
                   <Link
                     key={plan.name}

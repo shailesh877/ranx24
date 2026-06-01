@@ -149,7 +149,7 @@ export default function App() {
               <Route path="/home-tips" element={<HomeTips />} />
               <Route path="/home-tips/:id" element={<HomeTipDetail />} />
               <Route path="/membership-plan" element={<MembershipPlanPage />} />
-              <Route path="/amc-plan" element={<AMCPlanPage />} />
+              <Route path="/marriage-event-package" element={<AMCPlanPage />} />
               <Route path="/verify-worker/:id" element={<VerifyWorker />} />
             </Route>
 

@@ -95,7 +95,7 @@ export default function UserProfilePage() {
                 amount: orderData.amount,
                 currency: orderData.currency,
                 name: "RanX24",
-                description: `AMC EMI Installment #${installment.installment_number}`,
+                description: `Marriage & Event Package EMI Installment #${installment.installment_number}`,
                 order_id: orderData.id,
                 handler: async function (response) {
                     try {
@@ -222,7 +222,7 @@ export default function UserProfilePage() {
                                     <LucideShieldCheck className="text-emerald-300" size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-black">{amc.planName} AMC</h2>
+                                    <h2 className="text-xl font-black">{amc.planName} Package</h2>
                                     <p className="text-emerald-100 text-sm font-medium">#{amc.contract_number}</p>
                                 </div>
                             </div>

@@ -60,7 +60,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
             // 2. Open Razorpay
             const options = {
-                description: `AMC EMI Installment #${installment.installment_number}`,
+                description: `Marriage & Event Package EMI Installment #${installment.installment_number}`,
                 image: 'https://ranx24.com/logo.png',
                 currency: orderData.currency,
                 key: razorpayKey,
@@ -114,7 +114,7 @@ const ProfileScreen = ({ navigation }: any) => {
         { icon: 'scan-outline', label: 'Verify Professional (QR)', screen: 'QRScanner', color: '#EF4444' },
         { icon: 'person-outline', label: 'Edit Profile', screen: 'EditProfile', color: '#3B82F6' },
         { icon: 'ribbon-outline', label: 'Membership Plans', screen: 'Membership', color: '#F59E0B' },
-        { icon: 'shield-checkmark-outline', label: 'Annual Maintenance (AMC)', screen: 'AMC', color: '#10B981' },
+        { icon: 'shield-checkmark-outline', label: 'Marriage & Event Package', screen: 'AMC', color: '#10B981' },
         { icon: 'location-outline', label: 'My Addresses', screen: 'MyAddresses', color: '#10B981' },
         { icon: 'calendar-outline', label: 'My Bookings', screen: 'MyBookings', color: '#8B5CF6' },
         { icon: 'notifications-outline', label: 'Notifications', screen: 'Notifications', color: '#F59E0B' },
@@ -235,7 +235,7 @@ const ProfileScreen = ({ navigation }: any) => {
                                     <View style={styles.activeCardTitleBox}>
                                         <Ionicons name="shield-checkmark" size={24} color="#D1FAE5" />
                                         <View>
-                                            <Text style={styles.activeCardTitle}>{amcData.planName.toLowerCase().includes('amc') ? amcData.planName : `${amcData.planName} AMC`}</Text>
+                                            <Text style={styles.activeCardTitle}>{amcData.planName.toLowerCase().includes('package') ? amcData.planName : `${amcData.planName} Package`}</Text>
                                             <Text style={{ color: '#D1FAE5', fontSize: 12, marginLeft: 8 }}>#{amcData.contract_number}</Text>
                                         </View>
                                     </View>
@@ -249,15 +249,15 @@ const ProfileScreen = ({ navigation }: any) => {
                                 <View style={styles.amcBenefitsRow}>
                                     <View style={styles.amcBenefitBadge}>
                                         <Ionicons name="flash-outline" size={12} color="#FFF" />
-                                        <Text style={styles.amcBenefitText}>Priority Service</Text>
+                                        <Text style={styles.amcBenefitText}>Priority Coordination</Text>
                                     </View>
                                     <View style={styles.amcBenefitBadge}>
                                         <Ionicons name="construct-outline" size={12} color="#FFF" />
-                                        <Text style={styles.amcBenefitText}>Expert Techs</Text>
+                                        <Text style={styles.amcBenefitText}>Event Experts</Text>
                                     </View>
                                     <View style={styles.amcBenefitBadge}>
                                         <Ionicons name="time-outline" size={12} color="#FFF" />
-                                        <Text style={styles.amcBenefitText}>24h Response</Text>
+                                        <Text style={styles.amcBenefitText}>Quick Response</Text>
                                     </View>
                                     {(amcData.total_visits > 0 || amcData.remaining_visits > 0) && (
                                         <View style={styles.amcBenefitBadge}>
@@ -289,7 +289,7 @@ const ProfileScreen = ({ navigation }: any) => {
                                             <Ionicons name="person" size={14} color="#FFF" />
                                         </View>
                                         <Text style={{ color: '#D1FAE5', fontSize: 11, marginLeft: 8, fontWeight: 'bold' }}>
-                                            Technician: <Text style={{ color: '#FFF' }}>{amcData.technician_name || 'Assigned Soon'}</Text>
+                                            Coordinator: <Text style={{ color: '#FFF' }}>{amcData.technician_name || 'Assigned Soon'}</Text>
                                         </Text>
                                     </View>
                                     <View style={{ backgroundColor: '#10B981', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
