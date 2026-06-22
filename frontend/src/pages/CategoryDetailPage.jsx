@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://backend.ranx24.com/api';
 
 export default function CategoryDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,6 +16,10 @@ export default function CategoryDetailPage() {
     const fetchCategory = async () => {
       try {
         const { data } = await axios.get(`${API_URL}/categories/${id}`);
+        if (data && data.name === "Marriage & Event") {
+          navigate('/marriage-event-packages', { replace: true });
+          return;
+        }
         setCategory(data);
       } catch (err) {
         console.error("CategoryDetailPage: Error fetching data:", err);
@@ -24,7 +29,7 @@ export default function CategoryDetailPage() {
       }
     };
     fetchCategory();
-  }, [id]);
+  }, [id, navigate]);
 
   const filteredSubCategories = category?.subCategories?.filter(sub =>
     sub.name.toLowerCase().includes(searchTerm.toLowerCase())

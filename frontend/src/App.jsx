@@ -41,6 +41,10 @@ const HomeTips = lazy(() => import("./pages/HomeTips"));
 const HomeTipDetail = lazy(() => import("./pages/HomeTipDetail"));
 const MembershipPlanPage = lazy(() => import("./pages/MembershipPlanPage"));
 const AMCPlanPage = lazy(() => import("./pages/AMCPlanPage"));
+const MarriageEventPackagesPage = lazy(() => import("./pages/MarriageEventPackagesPage"));
+const MarriageEventPackageDetailPage = lazy(() => import("./pages/MarriageEventPackageDetailPage"));
+const MarriageEventBookingPage = lazy(() => import("./pages/MarriageEventBookingPage"));
+
 
 // Admin Pages
 const AdminLoginPage = lazy(() => import("./pages/AdminLoginPage"));
@@ -138,8 +142,8 @@ export default function App() {
                 <Route path="/user-wallet" element={<UserWalletPage />} />
                 <Route path="/dashboard" element={<UserDashboard />} />
                 <Route path="/chat/:bookingId" element={<ChatPage />} />
-                <Route path="/chat/:bookingId" element={<ChatPage />} />
                 <Route path="/chats" element={<ChatListPage />} />
+                <Route path="/marriage-event-booking/:id" element={<MarriageEventBookingPage />} />
               </Route>
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
@@ -150,6 +154,8 @@ export default function App() {
               <Route path="/home-tips/:id" element={<HomeTipDetail />} />
               <Route path="/membership-plan" element={<MembershipPlanPage />} />
               <Route path="/marriage-event-package" element={<AMCPlanPage />} />
+              <Route path="/marriage-event-packages" element={<MarriageEventPackagesPage />} />
+              <Route path="/marriage-event-package/:id" element={<MarriageEventPackageDetailPage />} />
               <Route path="/verify-worker/:id" element={<VerifyWorker />} />
             </Route>
 

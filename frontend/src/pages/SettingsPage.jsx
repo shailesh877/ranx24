@@ -5,11 +5,13 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://backend.ranx24.com/api';
 
 export default function SettingsPage() {
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     // Notification Preferences State
     const [notifications, setNotifications] = useState({
@@ -25,6 +27,11 @@ export default function SettingsPage() {
         confirmNewPassword: '',
     });
     const [passwordLoading, setPasswordLoading] = useState(false);
+
+    // Delete Account State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletePassword, setDeletePassword] = useState('');
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     const handleNotificationChange = (e) => {
         setNotifications({ ...notifications, [e.target.name]: e.target.checked });
@@ -73,6 +80,36 @@ export default function SettingsPage() {
             toast.error(error.response?.data?.message || 'Failed to update password');
         } finally {
             setPasswordLoading(false);
+        }
+    };
+
+    const handleDeleteAccount = async (e) => {
+        e.preventDefault();
+        if (!deletePassword) {
+            toast.error("Password is required");
+            return;
+        }
+
+        setDeleteLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const config = {
+                headers: { Authorization: `Bearer ${token}` },
+                data: { password: deletePassword }
+            };
+
+            await axios.delete(`${API_URL}/users/delete-account`, config);
+
+            toast.success('Account deleted successfully');
+            setShowDeleteModal(false);
+            setDeletePassword('');
+            logout();
+            navigate('/');
+        } catch (error) {
+            console.error('Delete account error:', error);
+            toast.error(error.response?.data?.message || 'Failed to delete account');
+        } finally {
+            setDeleteLoading(false);
         }
     };
 
@@ -229,7 +266,7 @@ export default function SettingsPage() {
                                 <p className="text-sm text-red-600 mb-4">
                                     Once you delete your account, there is no going back. Please be certain.
                                 </p>
-                                <Button variant="danger" size="sm">
+                                <Button variant="danger" size="sm" onClick={() => setShowDeleteModal(true)}>
                                     Delete Account
                                 </Button>
                             </div>
@@ -237,6 +274,50 @@ export default function SettingsPage() {
                     </Card>
                 </div>
             </div>
+
+            {/* Delete Account Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-200 text-left">
+                        <h3 className="text-2xl font-black text-gray-900 mb-2">Delete Account</h3>
+                        <p className="text-sm text-gray-600 mb-6 font-medium">
+                            To protect your account, please enter your current password to verify your identity.
+                        </p>
+                        <form onSubmit={handleDeleteAccount} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Current Password</label>
+                                <input
+                                    type="password"
+                                    value={deletePassword}
+                                    onChange={(e) => setDeletePassword(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+                            <div className="flex gap-3 justify-end pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setDeletePassword('');
+                                    }}
+                                    className="px-5 py-3 border border-gray-200 hover:bg-gray-50 rounded-xl text-gray-600 font-bold transition-all text-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={deleteLoading}
+                                    className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black shadow-lg shadow-red-500/20 transition-all text-sm disabled:opacity-50"
+                                >
+                                    {deleteLoading ? 'Deleting...' : 'Confirm Delete'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

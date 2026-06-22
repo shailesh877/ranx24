@@ -60,7 +60,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
             // 2. Open Razorpay
             const options = {
-                description: `Marriage & Event Package EMI Installment #${installment.installment_number}`,
+                description: `AMC Package EMI Installment #${installment.installment_number}`,
                 image: 'https://ranx24.com/logo.png',
                 currency: orderData.currency,
                 key: razorpayKey,
@@ -114,7 +114,7 @@ const ProfileScreen = ({ navigation }: any) => {
         { icon: 'scan-outline', label: 'Verify Professional (QR)', screen: 'QRScanner', color: '#EF4444' },
         { icon: 'person-outline', label: 'Edit Profile', screen: 'EditProfile', color: '#3B82F6' },
         { icon: 'ribbon-outline', label: 'Membership Plans', screen: 'Membership', color: '#F59E0B' },
-        { icon: 'shield-checkmark-outline', label: 'Marriage & Event Package', screen: 'AMC', color: '#10B981' },
+        { icon: 'shield-checkmark-outline', label: 'AMC', screen: 'AMC', color: '#10B981' },
         { icon: 'location-outline', label: 'My Addresses', screen: 'MyAddresses', color: '#10B981' },
         { icon: 'calendar-outline', label: 'My Bookings', screen: 'MyBookings', color: '#8B5CF6' },
         { icon: 'notifications-outline', label: 'Notifications', screen: 'Notifications', color: '#F59E0B' },

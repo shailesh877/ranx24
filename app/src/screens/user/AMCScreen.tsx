@@ -80,7 +80,7 @@ const AMCScreen = ({ navigation }: any) => {
             Toast.show({
                 type: 'error',
                 text1: 'Authentication',
-                text2: 'Please login to purchase a Marriage & Event package'
+                text2: 'Please login to purchase an AMC package'
             });
             navigation.navigate('Login');
             return;
@@ -110,7 +110,7 @@ const AMCScreen = ({ navigation }: any) => {
 
             // 3. Open Razorpay Checkout
             const options = {
-                description: `Marriage & Event Package Purchase (${selectedPlans.length} packages)`,
+                description: `AMC Package Purchase (${selectedPlans.length} packages)`,
                 image: 'https://ranx24.com/logo.png',
                 currency: orderData.currency,
                 key: razorpayKey,
@@ -141,7 +141,7 @@ const AMCScreen = ({ navigation }: any) => {
                 Toast.show({
                     type: 'success',
                     text1: 'Success',
-                    text2: 'Marriage & Event Package activated successfully!'
+                    text2: 'AMC Package activated successfully!'
                 });
                 navigation.navigate('Main', { screen: 'Profile' });
             } else {
@@ -230,14 +230,14 @@ const AMCScreen = ({ navigation }: any) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Marriage & Event</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>AMC Packages</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <View style={styles.content}>
                 <View style={styles.introSection}>
-                    <Text style={[styles.introTitle, { color: colors.text }]}>Custom Package</Text>
-                    <Text style={[styles.introSub, { color: colors.textSecondary }]}>Select one or more services to build your custom marriage & event package.</Text>
+                    <Text style={[styles.introTitle, { color: colors.text }]}>Custom AMC Plan</Text>
+                    <Text style={[styles.introSub, { color: colors.textSecondary }]}>Select one or more services to build your custom AMC package.</Text>
                 </View>
 
                 {loading ? (

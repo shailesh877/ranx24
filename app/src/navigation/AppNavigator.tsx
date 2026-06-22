@@ -44,6 +44,12 @@ import MembershipScreen from '../screens/user/MembershipScreen';
 import AMCScreen from '../screens/user/AMCScreen';
 import QRScannerScreen from '../screens/user/QRScannerScreen';
 import VerifyWorkerScreen from '../screens/user/VerifyWorkerScreen';
+import MarriageEventPackagesScreen from '../screens/user/MarriageEventPackagesScreen';
+import MarriageEventPackageDetailScreen from '../screens/user/MarriageEventPackageDetailScreen';
+import MarriageEventBookingScreen from '../screens/user/MarriageEventBookingScreen';
+import MarriageEventBookingSuccessScreen from '../screens/user/MarriageEventBookingSuccessScreen';
+import MarriageEventBookingDetailScreen from '../screens/user/MarriageEventBookingDetailScreen';
+
 
 // Worker Screens
 import WorkerDashboardScreen from '../screens/worker/WorkerDashboardScreen';
@@ -176,6 +182,11 @@ const AppNavigator: React.FC = () => {
                         
                         <Stack.Screen name="QRScanner" component={QRScannerScreen} />
                         <Stack.Screen name="VerifyWorker" component={VerifyWorkerScreen} />
+                        <Stack.Screen name="MarriageEventPackages" component={MarriageEventPackagesScreen} />
+                        <Stack.Screen name="MarriageEventPackageDetail" component={MarriageEventPackageDetailScreen} />
+                        <Stack.Screen name="MarriageEventBooking" component={MarriageEventBookingScreen} />
+                        <Stack.Screen name="MarriageEventBookingSuccess" component={MarriageEventBookingSuccessScreen} />
+                        <Stack.Screen name="MarriageEventBookingDetail" component={MarriageEventBookingDetailScreen} />
                     </>
                 )}
             </Stack.Navigator>

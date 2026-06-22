@@ -19,9 +19,11 @@ import { generateInvoice } from '../../utils/InvoiceGenerator';
 const MyBookingsScreen = ({ navigation }) => {
     const { colors, isDark } = useTheme();
     const [bookings, setBookings] = useState([]);
+    const [eventBookings, setEventBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState('all'); // all, pending, active, completed
+    const [bookingType, setBookingType] = useState('services'); // services, events
 
     useEffect(() => {
         fetchBookings();
@@ -34,6 +36,14 @@ const MyBookingsScreen = ({ navigation }) => {
         } catch (error) {
             console.error('Error fetching bookings:', error);
             setBookings([]);
+        }
+
+        try {
+            const response = await api.get('/marriage-event-bookings/my');
+            setEventBookings(response.data || []);
+        } catch (error) {
+            console.error('Error fetching event bookings:', error);
+            setEventBookings([]);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -46,9 +56,12 @@ const MyBookingsScreen = ({ navigation }) => {
     };
 
     const getStatusColor = (status) => {
-        switch (status) {
+        const lowerStatus = status?.toLowerCase();
+        switch (lowerStatus) {
             case 'pending': return '#F59E0B';
-            case 'confirmed': return '#3B82F6';
+            case 'confirmed':
+            case 'active':
+                return '#3B82F6';
             case 'in-progress': return '#8B5CF6';
             case 'completed': return '#10B981';
             case 'cancelled': return '#EF4444';
@@ -57,13 +70,24 @@ const MyBookingsScreen = ({ navigation }) => {
     };
 
     const getStatusLabel = (status) => {
-        switch (status) {
+        const lowerStatus = status?.toLowerCase();
+        switch (lowerStatus) {
             case 'pending': return 'Pending';
             case 'confirmed': return 'Confirmed';
+            case 'active': return 'Active';
             case 'in-progress': return 'In Progress';
             case 'completed': return 'Completed';
             case 'cancelled': return 'Cancelled';
             default: return status;
+        }
+    };
+
+    const getPaymentStatusColor = (status) => {
+        switch (status) {
+            case 'Paid': return '#10B981';
+            case 'Partial Payment Paid': return '#F59E0B';
+            case 'Pending': return '#EF4444';
+            default: return '#6B7280';
         }
     };
 
@@ -72,6 +96,15 @@ const MyBookingsScreen = ({ navigation }) => {
         if (activeTab === 'pending') return booking.status === 'pending';
         if (activeTab === 'active') return ['confirmed', 'in-progress'].includes(booking.status);
         if (activeTab === 'completed') return ['completed', 'cancelled'].includes(booking.status);
+        return true;
+    });
+
+    const filteredEventBookings = eventBookings.filter((booking) => {
+        const statusLower = booking.status?.toLowerCase();
+        if (activeTab === 'all') return true;
+        if (activeTab === 'pending') return statusLower === 'pending';
+        if (activeTab === 'active') return statusLower === 'active';
+        if (activeTab === 'completed') return ['completed', 'cancelled'].includes(statusLower);
         return true;
     });
 
@@ -137,6 +170,72 @@ const MyBookingsScreen = ({ navigation }) => {
         </TouchableOpacity>
     );
 
+    const renderEventBooking = ({ item }) => {
+        const packageImg = item.package_id?.images?.[0] || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=400&auto=format&fit=crop';
+
+        return (
+            <TouchableOpacity
+                style={[styles.bookingCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => navigation.navigate('MarriageEventBookingDetail', { bookingId: item._id })}
+                activeOpacity={0.9}
+            >
+                {/* Header: Date & Status */}
+                <View style={[styles.cardHeader, { borderBottomColor: colors.border }]}>
+                    <View style={styles.dateContainer}>
+                        <Ionicons name="calendar" size={14} color={colors.textSecondary} />
+                        <Text style={[styles.dateText, { color: colors.textSecondary }]}>
+                            {new Date(item.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </Text>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(item.status)}15` }]}>
+                        <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                            {getStatusLabel(item.status)}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Content: Package & Venue */}
+                <View style={styles.cardContent}>
+                    <Image source={{ uri: packageImg }} style={styles.eventImage} />
+                    <View style={styles.cardInfo}>
+                        <Text style={[styles.serviceName, { color: colors.text }]} numberOfLines={1}>
+                            {item.package_id?.name || 'Event Package'}
+                        </Text>
+                        {item.package_id?.hall_name ? (
+                            <Text style={[styles.workerName, { color: colors.textSecondary }]} numberOfLines={1}>
+                                📍 {item.package_id.hall_name}
+                            </Text>
+                        ) : null}
+                        <Text style={[styles.paymentStatusTextMicro, { color: getPaymentStatusColor(item.payment_status) }]}>
+                            ● {item.payment_status}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Pricing / Advance Row */}
+                <View style={styles.priceRow}>
+                    <View>
+                        <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>Total Price</Text>
+                        <Text style={[styles.priceValue, { color: colors.text }]}>₹{item.total_price.toLocaleString('en-IN')}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>Paid</Text>
+                        <Text style={[styles.priceValue, { color: '#16a34a' }]}>₹{(item.advance_paid || 0).toLocaleString('en-IN')}</Text>
+                    </View>
+                </View>
+
+                {/* Footer: ID & Arrow */}
+                <View style={[styles.cardFooter, { backgroundColor: isDark ? '#374151' : '#F9FAFB', borderTopColor: colors.border }]}>
+                    <Text style={[styles.bookingId, { color: colors.textSecondary }]}>Contract: {item.contract_number || 'N/A'}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={[styles.viewDetailsText, { color: colors.primary }]}>View Details</Text>
+                        <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+                    </View>
+                </View>
+            </TouchableOpacity>
+        );
+    };
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
@@ -149,7 +248,39 @@ const MyBookingsScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Tabs */}
+            {/* Booking Type Switcher Toggle */}
+            <View style={[styles.typeSwitcher, { backgroundColor: isDark ? '#1e293b' : '#f1f5f9' }]}>
+                <TouchableOpacity
+                    style={[
+                        styles.typeTab,
+                        bookingType === 'services' && { backgroundColor: colors.primary }
+                    ]}
+                    onPress={() => setBookingType('services')}
+                >
+                    <Text style={[
+                        styles.typeTabText,
+                        { color: bookingType === 'services' ? '#FFFFFF' : colors.textSecondary }
+                    ]}>
+                        Service Bookings
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[
+                        styles.typeTab,
+                        bookingType === 'events' && { backgroundColor: colors.primary }
+                    ]}
+                    onPress={() => setBookingType('events')}
+                >
+                    <Text style={[
+                        styles.typeTabText,
+                        { color: bookingType === 'events' ? '#FFFFFF' : colors.textSecondary }
+                    ]}>
+                        Event Bookings
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Status Tabs */}
             <View style={styles.tabsContainer}>
                 {['all', 'pending', 'active', 'completed'].map((tab) => (
                     <TouchableOpacity
@@ -174,8 +305,8 @@ const MyBookingsScreen = ({ navigation }) => {
 
             {/* List */}
             <FlatList
-                data={filteredBookings}
-                renderItem={renderBooking}
+                data={bookingType === 'services' ? filteredBookings : filteredEventBookings}
+                renderItem={bookingType === 'services' ? renderBooking : renderEventBooking}
                 keyExtractor={(item) => item._id}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
@@ -189,13 +320,18 @@ const MyBookingsScreen = ({ navigation }) => {
                             />
                             <Text style={[styles.emptyTitle, { color: colors.text }]}>No Bookings Found</Text>
                             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                                Looks like you haven't made any bookings in this category yet.
+                                {bookingType === 'services'
+                                    ? "Looks like you haven't made any service bookings yet."
+                                    : "Looks like you haven't made any event bookings yet."
+                                }
                             </Text>
                             <TouchableOpacity
                                 style={[styles.browseButton, { backgroundColor: colors.primary }]}
-                                onPress={() => navigation.navigate('Home')}
+                                onPress={() => navigation.navigate(bookingType === 'services' ? 'Home' : 'MarriageEventPackages')}
                             >
-                                <Text style={[styles.browseButtonText, { color: '#FFFFFF' }]}>Browse Services</Text>
+                                <Text style={[styles.browseButtonText, { color: '#FFFFFF' }]}>
+                                    {bookingType === 'services' ? 'Browse Services' : 'Browse Event Packages'}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     )
@@ -368,6 +504,40 @@ const styles = StyleSheet.create({
     browseButtonText: {
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    typeSwitcher: {
+        flexDirection: 'row',
+        marginHorizontal: SPACING.l,
+        marginBottom: SPACING.m,
+        borderRadius: 12,
+        padding: 4,
+    },
+    typeTab: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderRadius: 10,
+    },
+    typeTabText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    eventImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 8,
+        marginRight: 12,
+    },
+    priceRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+        paddingHorizontal: 4,
+    },
+    paymentStatusTextMicro: {
+        fontSize: 11,
+        fontWeight: '700',
+        marginTop: 2,
     },
 });
 

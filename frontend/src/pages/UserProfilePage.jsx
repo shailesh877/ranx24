@@ -95,7 +95,7 @@ export default function UserProfilePage() {
                 amount: orderData.amount,
                 currency: orderData.currency,
                 name: "RanX24",
-                description: `Marriage & Event Package EMI Installment #${installment.installment_number}`,
+                description: `AMC Package EMI Installment #${installment.installment_number}`,
                 order_id: orderData.id,
                 handler: async function (response) {
                     try {

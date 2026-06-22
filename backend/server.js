@@ -164,6 +164,8 @@ import testimonialRoutes from "./router/testimonialRoutes.js";
 import membershipRoutes from "./router/membershipRoutes.js";
 import amcRoutes from "./router/amcRoutes.js";
 import feeRoutes from "./router/feeRoutes.js";
+import marriageEventPackageRoutes from "./router/marriageEventPackageRoutes.js";
+import marriageEventBookingRoutes from "./router/marriageEventBookingRoutes.js";
 
 // Use Routes
 app.use("/api/admin", adminRoutes);
@@ -197,6 +199,8 @@ app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/membership-plans", membershipRoutes);
 app.use("/api/amc-plans", amcRoutes);
 app.use("/api/fees", feeRoutes);
+app.use("/api/marriage-event-packages", marriageEventPackageRoutes);
+app.use("/api/marriage-event-bookings", marriageEventBookingRoutes);
 
 // Health Check Endpoint
 app.get("/health", (req, res) => {

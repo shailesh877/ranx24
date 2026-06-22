@@ -67,6 +67,15 @@ const CategoriesScreen = ({ navigation, route }: any) => {
     };
 
     const handleCategoryPress = (category: any) => {
+        // Special handling for Marriage & Event category
+        if (category.name && category.name.toLowerCase().includes('marriage')) {
+            // @ts-ignore
+            navigation.navigate('MarriageEventPackages', {
+                categoryName: category.name,
+            });
+            return;
+        }
+        // @ts-ignore
         navigation.navigate('CategoryDetail', {
             categoryId: category._id,
             categoryName: category.name,

@@ -109,7 +109,11 @@ export default function CategoriesPage() {
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {filteredCategories.map((category) => (
-                            <Link key={category._id} to={`/category/${category._id}`} className="group">
+                            <Link 
+                              key={category._id} 
+                              to={category.name === "Marriage & Event" ? "/marriage-event-packages" : `/category/${category._id}`} 
+                              className="group"
+                            >
                                 <div className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden h-full flex flex-col">
                                     <div className="h-48 overflow-hidden relative">
                                         <img

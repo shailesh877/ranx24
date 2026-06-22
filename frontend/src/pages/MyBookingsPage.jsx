@@ -23,6 +23,8 @@ const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'https://backend.ranx24.co
 export default function MyBookingsPage() {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
+  const [eventBookings, setEventBookings] = useState([]);
+  const [bookingType, setBookingType] = useState('services'); // services, events
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -31,10 +33,32 @@ export default function MyBookingsPage() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [payingId, setPayingId] = useState(null);
+  const [payingEventId, setPayingEventId] = useState(null);
 
   useEffect(() => {
     fetchBookings();
   }, []);
+
+  const parseImages = (raw) => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+        try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return raw.trim() ? [raw] : [];
+        }
+    }
+    return [];
+  };
+
+  const getImageUrl = (imgPath) => {
+    if (!imgPath) return 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=400&auto=format&fit=crop';
+    const clean = imgPath.replace(/\\/g, '/');
+    return clean.startsWith('http') ? clean : `${SERVER_URL}/${clean.replace(/^\//, '')}`;
+  };
+
 
   const fetchBookings = async () => {
     try {
@@ -52,6 +76,19 @@ export default function MyBookingsPage() {
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast.error('Failed to load bookings');
+    }
+
+    try {
+      const { data } = await axiosInstance.get(`/marriage-event-bookings/my`);
+      const normalized = (data || []).map(b => {
+        if (b.package_id) {
+          b.package_id.images = parseImages(b.package_id.images);
+        }
+        return b;
+      });
+      setEventBookings(normalized);
+    } catch (error) {
+      console.error('Error fetching event bookings:', error);
     } finally {
       setLoading(false);
     }
@@ -126,6 +163,86 @@ export default function MyBookingsPage() {
     }
   };
 
+  const handlePayEventBalance = async (booking) => {
+    setPayingEventId(booking._id);
+    try {
+      let amountToPay = 0;
+      let description = '';
+
+      if (booking.payment_status === 'Pending') {
+        amountToPay = booking.advance_amount - (booking.advance_paid || 0);
+        description = `Advance Payment for ${booking.package_id?.name || 'Event'}`;
+      } else {
+        amountToPay = booking.total_price - (booking.advance_paid || 0);
+        description = `Final Payment for ${booking.package_id?.name || 'Event'}`;
+      }
+
+      if (amountToPay <= 0) {
+        toast.error('No pending amount to pay.');
+        setPayingEventId(null);
+        return;
+      }
+
+      const razorpayKey = await getRazorpayConfig();
+
+      const { data: orderData } = await axiosInstance.post(
+        `/payment/order`,
+        { amount: amountToPay }
+      );
+
+      const options = {
+        key: razorpayKey,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "RanX24 Events",
+        description: description,
+        order_id: orderData.id,
+        handler: async function (response) {
+          try {
+            const verifyRes = await axiosInstance.post(
+              `/payment/verify`,
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }
+            );
+
+            if (verifyRes.data.success) {
+              await axiosInstance.post(`/marriage-event-bookings/${booking._id}/pay-advance`, {
+                razorpay_payment_id: response.razorpay_payment_id,
+                amount_paid: amountToPay,
+              });
+
+              toast.success('Payment successful!');
+              fetchBookings();
+            } else {
+              toast.error('Payment verification failed');
+            }
+          } catch (err) {
+            console.error('Payment callback error:', err);
+            toast.error('Payment verification failed');
+          } finally {
+            setPayingEventId(null);
+          }
+        },
+        theme: { color: "#4F46E5" },
+        modal: {
+          ondismiss: function() {
+            setPayingEventId(null);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Failed to initiate payment');
+      setPayingEventId(null);
+    }
+  };
+
   const handleOpenReviewModal = (booking) => {
     setSelectedBooking(booking);
     setShowReviewModal(true);
@@ -165,13 +282,25 @@ export default function MyBookingsPage() {
   };
 
   const getStatusInfo = (status) => {
-    switch (status) {
+    const sLower = status?.toLowerCase();
+    switch (sLower) {
       case 'pending': return { color: 'text-amber-700 bg-amber-50 border-amber-100', icon: LucideClock, label: 'Pending' };
-      case 'confirmed': return { color: 'text-blue-700 bg-blue-50 border-blue-100', icon: LucideCheckCircle, label: 'Confirmed' };
+      case 'confirmed':
+      case 'active':
+        return { color: 'text-blue-700 bg-blue-50 border-blue-100', icon: LucideCheckCircle, label: 'Active' };
       case 'in-progress': return { color: 'text-purple-700 bg-purple-50 border-purple-100', icon: LucideLoader, label: 'In Progress' };
       case 'completed': return { color: 'text-emerald-700 bg-emerald-50 border-emerald-100', icon: LucideCheckCircle, label: 'Completed' };
       case 'cancelled': return { color: 'text-rose-700 bg-rose-50 border-rose-100', icon: LucideAlertCircle, label: 'Cancelled' };
       default: return { color: 'text-gray-700 bg-gray-50 border-gray-100', icon: LucideAlertCircle, label: status };
+    }
+  };
+
+  const getPaymentStatusColor = (status) => {
+    switch (status) {
+      case 'Paid': return 'text-emerald-700 bg-emerald-50 border-emerald-100';
+      case 'Partial Payment Paid': return 'text-amber-700 bg-amber-50 border-amber-100';
+      case 'Pending': return 'text-rose-700 bg-rose-50 border-rose-100';
+      default: return 'text-gray-700 bg-gray-50 border-gray-100';
     }
   };
 
@@ -180,6 +309,15 @@ export default function MyBookingsPage() {
     if (activeTab === 'pending') return booking.status === 'pending';
     if (activeTab === 'active') return ['confirmed', 'in-progress', 'accepted'].includes(booking.status);
     if (activeTab === 'completed') return ['completed', 'cancelled'].includes(booking.status);
+    return true;
+  });
+
+  const filteredEventBookings = eventBookings.filter((booking) => {
+    const statusLower = booking.status?.toLowerCase();
+    if (activeTab === 'all') return true;
+    if (activeTab === 'pending') return statusLower === 'pending';
+    if (activeTab === 'active') return statusLower === 'active';
+    if (activeTab === 'completed') return ['completed', 'cancelled'].includes(statusLower);
     return true;
   });
 
@@ -192,11 +330,35 @@ export default function MyBookingsPage() {
             <p className="text-gray-500 mt-1 font-medium">Manage and track your service requests</p>
           </div>
           <button 
-            onClick={() => navigate('/')} 
+            onClick={() => navigate(bookingType === 'services' ? '/' : '/marriage-event-packages')} 
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
           >
-            Book New Service
+            {bookingType === 'services' ? 'Book New Service' : 'Book Event Package'}
             <LucideChevronRight size={18} />
+          </button>
+        </div>
+
+        {/* Booking Type Switcher Toggle */}
+        <div className="flex gap-4 p-1 bg-gray-200/50 rounded-2xl mb-8 w-fit">
+          <button
+            onClick={() => { setBookingType('services'); setActiveTab('all'); }}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              bookingType === 'services'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Service Bookings
+          </button>
+          <button
+            onClick={() => { setBookingType('events'); setActiveTab('all'); }}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              bookingType === 'events'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Event Bookings
           </button>
         </div>
 
@@ -222,23 +384,26 @@ export default function MyBookingsPage() {
             <LucideLoader className="animate-spin text-blue-600 mb-4" size={40} />
             <p className="text-gray-500 font-medium">Loading your bookings...</p>
           </div>
-        ) : filteredBookings.length === 0 ? (
+        ) : (bookingType === 'services' ? filteredBookings : filteredEventBookings).length === 0 ? (
           <div className="bg-white rounded-3xl p-12 text-center shadow-sm border border-gray-100">
             <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
               <LucideCalendar className="text-blue-500" size={32} />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">No bookings found</h2>
             <p className="text-gray-500 mb-8 max-w-sm mx-auto">
-              You haven't made any bookings in this category yet. Start your first service request now!
+              {bookingType === 'services'
+                ? "You haven't made any service bookings yet. Start your first service request now!"
+                : "You haven't made any event bookings yet. Start your first event booking now!"
+              }
             </p>
             <button 
-              onClick={() => navigate('/')} 
+              onClick={() => navigate(bookingType === 'services' ? '/' : '/marriage-event-packages')} 
               className="bg-gray-900 text-white px-8 py-3 rounded-2xl font-bold hover:bg-black transition-all"
             >
-              Explore Services
+              {bookingType === 'services' ? 'Explore Services' : 'Explore Event Packages'}
             </button>
           </div>
-        ) : (
+        ) : bookingType === 'services' ? (
           <div className="grid grid-cols-1 gap-6">
             {filteredBookings.map((booking) => {
               const status = getStatusInfo(booking.status);
@@ -404,6 +569,106 @@ export default function MyBookingsPage() {
                         </>
                       )}
                     </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {filteredEventBookings.map((booking) => {
+              const status = getStatusInfo(booking.status);
+              const total = booking.total_price;
+              const paid = booking.advance_paid || 0;
+              const remaining = total - paid;
+              const firstImg = booking.package_id?.images?.[0] ? getImageUrl(booking.package_id.images[0]) : '';
+
+              return (
+                <div key={booking._id} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all group">
+                  <div className="p-6 md:p-8">
+                    {/* Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-50 p-2.5 rounded-xl group-hover:bg-blue-100 transition-colors">
+                          <LucideCalendar className="text-blue-600" size={20} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">
+                            {new Date(booking.event_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                          <p className="text-[10px] text-gray-400 font-mono tracking-tighter">Contract: {booking.contract_number}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-xs font-black uppercase tracking-wider ${status.color}`}>
+                          <status.icon size={14} strokeWidth={3} />
+                          {status.label}
+                        </div>
+                        <div className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-xs font-black uppercase tracking-wider ${getPaymentStatusColor(booking.payment_status)}`}>
+                          {booking.payment_status}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col lg:flex-row gap-8">
+                      {/* Left: Package Info */}
+                      <div className="flex-1 flex gap-5">
+                        <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-100 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
+                          <img 
+                            src={firstImg} 
+                            alt={booking.package_id?.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=400&auto=format&fit=crop'; }}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-1">{booking.package_id?.name || 'Event Package'}</h3>
+                          {booking.package_id?.hall_name && (
+                            <p className="text-blue-600 font-bold text-sm mb-4">📍 {booking.package_id.hall_name}</p>
+                          )}
+                          {booking.notes && (
+                            <p className="text-sm text-gray-500 italic mt-2">
+                              "{booking.notes}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right: Payment Info */}
+                      <div className="lg:w-72 bg-gray-50/80 rounded-2xl p-5 border border-gray-100">
+                        <div className="space-y-1 mb-3">
+                          <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
+                            <span>Total Price</span>
+                            <span>₹{total.toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
+                            <span>Paid So Far</span>
+                            <span className="text-green-600 font-bold">₹{paid.toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-200 mt-2">
+                            <span className="text-sm font-bold text-gray-900">Remaining</span>
+                            <span className="text-lg font-black text-gray-900">₹{remaining.toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    {booking.payment_status !== 'Paid' && booking.status !== 'Cancelled' && (
+                      <div className="mt-8 pt-6 border-t border-gray-100 flex flex-wrap gap-3">
+                        <button 
+                          onClick={() => handlePayEventBalance(booking)}
+                          disabled={payingEventId === booking._id}
+                          className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100 disabled:opacity-70"
+                        >
+                          {payingEventId === booking._id ? <LucideLoader className="animate-spin" size={18} /> : <LucideCreditCard size={18} />}
+                          {booking.payment_status === 'Pending' 
+                            ? `Pay Advance ₹${(booking.advance_amount - (booking.advance_paid || 0)).toLocaleString('en-IN')}`
+                            : `Pay Remaining Balance ₹${remaining.toLocaleString('en-IN')}`
+                          }
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

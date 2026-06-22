@@ -128,7 +128,11 @@ const HomePage = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {categories.map((category) => (
-            <Link key={category._id} to={`/category/${category._id}`} className="group">
+            <Link 
+              key={category._id} 
+              to={category.name === "Marriage & Event" ? "/marriage-event-packages" : `/category/${category._id}`} 
+              className="group"
+            >
               <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition-transform duration-300 group-hover:scale-105">
                 <img
                   src={`${SERVER_URL}/${category.image}`}
