@@ -45,7 +45,7 @@ export default function Footer() {
                         <ul className="space-y-3 text-gray-400 text-sm">
                             <li><FooterLink to="/worker-register">Join as a Professional</FooterLink></li>
                             <li><FooterLink to="/worker-login">Worker Login</FooterLink></li>
-                            <li><a href="https://crm.ranx24.com/event/login" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors block">Lawn Or Palace Login</a></li>
+                            <li><a href="https://crm.ranx24.com/event/login" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors block">Wedding & Event Management Services - Login</a></li>
                             <li><FooterLink to="/help">Help Center</FooterLink></li>
                         </ul>
                     </div>
