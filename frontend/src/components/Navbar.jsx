@@ -17,6 +17,7 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobilePlansOpen, setMobilePlansOpen] = useState(false);
+  const [mobileLoginOpen, setMobileLoginOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -225,9 +226,39 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-6">
-                <Link to="/login" className="text-sm font-bold text-gray-700 hover:text-blue-600 transition-colors tracking-wide">
-                  Log in
-                </Link>
+                {/* Login Dropdown */}
+                <div className="relative group">
+                  <button
+                    className="text-sm font-bold text-gray-700 hover:text-blue-600 transition-colors tracking-wide flex items-center gap-1.5 py-2 cursor-pointer"
+                  >
+                    Log in
+                    <LucideChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-300 text-gray-400 group-hover:text-blue-600" />
+                  </button>
+                  
+                  <div className="absolute top-full right-0 pt-3 w-64 hidden group-hover:block transition-all z-50 animate-in fade-in slide-in-from-top-1 duration-300">
+                    <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl py-3 border border-blue-50/50">
+                      <Link
+                        to="/login"
+                        className="flex flex-col px-5 py-3 hover:bg-blue-50 transition-colors"
+                      >
+                        <span className="text-sm font-bold text-gray-900">User Login</span>
+                        <span className="text-[11px] font-medium text-gray-500 mt-0.5">Access your customer profile & bookings</span>
+                      </Link>
+                      
+                      <div className="h-[1px] bg-gray-100 my-1 mx-4"></div>
+                      
+                      <a
+                        href="https://crm.ranx24.com/event/login"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-col px-5 py-3 hover:bg-blue-50 transition-colors"
+                      >
+                        <span className="text-sm font-bold text-gray-900">Wedding & Event Login</span>
+                        <span className="text-[11px] font-medium text-gray-500 mt-0.5">Manage your wedding and event bookings</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
                 <Link
                   to="/categories"
                   className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-7 py-3 rounded-2xl text-[14px] font-bold transition-all shadow-xl shadow-blue-600/25 hover:shadow-blue-600/40 hover:-translate-y-0.5 active:translate-y-0"
@@ -321,9 +352,36 @@ export default function Navbar() {
             </div>
           ) : (
             <div className="flex flex-col gap-4 mt-auto pb-10">
-              <Link to="/login" className="w-full text-center py-4 rounded-2xl border-2 border-gray-100 text-gray-800 font-bold hover:bg-gray-50 transition-colors" onClick={() => setMobileMenuOpen(false)}>
-                Member Login
-              </Link>
+              {/* Mobile Login Accordion */}
+              <div className="border border-gray-100 rounded-2xl overflow-hidden bg-gray-50/30">
+                <button
+                  className="w-full py-4 text-center text-gray-800 font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 border-b border-gray-100"
+                  onClick={() => setMobileLoginOpen(!mobileLoginOpen)}
+                >
+                  Log in
+                  <LucideChevronDown size={16} className={`text-gray-500 transition-transform duration-300 ${mobileLoginOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {mobileLoginOpen && (
+                  <div className="flex flex-col bg-white">
+                    <Link
+                      to="/login"
+                      className="px-6 py-4 text-sm font-bold text-gray-700 hover:text-blue-600 border-b border-gray-50"
+                      onClick={() => { setMobileMenuOpen(false); setMobileLoginOpen(false); }}
+                    >
+                      User Login
+                    </Link>
+                    <a
+                      href="https://crm.ranx24.com/event/login"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 py-4 text-sm font-bold text-gray-700 hover:text-blue-600"
+                      onClick={() => { setMobileMenuOpen(false); setMobileLoginOpen(false); }}
+                    >
+                      Wedding & Event Login
+                    </a>
+                  </div>
+                )}
+              </div>
               <Link to="/categories" className="w-full text-center py-4 rounded-2xl bg-blue-600 text-white font-bold shadow-xl shadow-blue-600/20" onClick={() => setMobileMenuOpen(false)}>
                 Book Professional Now
               </Link>
