@@ -92,7 +92,8 @@ export default function Navbar() {
                 <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl py-3 border border-blue-50/50">
                   {[
                     { name: 'Membership Plan', path: '/membership-plan', desc: 'Unlock exclusive benefits & savings' },
-                    { name: 'AMC', path: '/marriage-event-package', desc: 'Annual Maintenance Contract for home services' }
+                    { name: 'AMC', path: '/marriage-event-package', desc: 'Annual Maintenance Contract for home services' },
+                    { name: 'Marriage & Events', path: '/marriage-event-packages', desc: 'Explore wedding & celebration packages' }
                   ].map((plan) => (
                     <Link
                       key={plan.name}
@@ -307,7 +308,8 @@ export default function Navbar() {
               <div className="bg-gray-50/50 rounded-2xl mb-4 overflow-hidden">
                 {[
                   { name: 'Membership Plan', path: '/membership-plan' },
-                  { name: 'AMC', path: '/marriage-event-package' }
+                  { name: 'AMC', path: '/marriage-event-package' },
+                  { name: 'Marriage & Events', path: '/marriage-event-packages' }
                 ].map((plan) => (
                   <Link
                     key={plan.name}
